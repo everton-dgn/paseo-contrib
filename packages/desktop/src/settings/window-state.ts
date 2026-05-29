@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { mkdirSync, renameSync, writeFileSync } from "node:fs";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 export const MIN_WINDOW_WIDTH = 400;
@@ -205,8 +205,10 @@ export function createWindowStateStore({
         const tempPath = tempFilePath();
         await writeFile(tempPath, contents, "utf8");
         if (finalized) {
-          // A synchronous final write landed while this one was in flight;
-          // leave it as the last writer instead of overwriting it.
+          // A synchronous final write (saveSync) landed while this one was in
+          // flight. Keep it as the last writer instead of overwriting it, and
+          // discard our now-stale temp file so it can't accumulate in userData.
+          await unlink(tempPath).catch(() => undefined);
           return;
         }
         await rename(tempPath, filePath);
