@@ -32,7 +32,8 @@ export function ResizeHandle({
   onResizeSplit,
 }: ResizeHandleProps) {
   const { theme } = useUnistyles();
-  const pointerStateRef = useRef<PointerState | null>(null);
+  const pointerStatesRef = useRef(new Map<number, PointerState>());
+  const cursorBeforeDragRef = useRef<string | null>(null);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [active, setActive] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -56,28 +57,37 @@ export function ResizeHandle({
         return;
       }
 
+      const pointerId = event.nativeEvent.pointerId;
+      if (pointerStatesRef.current.has(pointerId)) {
+        return;
+      }
+
       setDragging(true);
 
-      pointerStateRef.current = {
+      pointerStatesRef.current.set(pointerId, {
         containerSize,
         pointerStart:
           direction === "horizontal" ? event.nativeEvent.clientX : event.nativeEvent.clientY,
-      };
+      });
 
-      const previousCursor = document.body.style.cursor;
+      if (pointerStatesRef.current.size === 1) {
+        cursorBeforeDragRef.current = document.body.style.cursor;
+      }
       const nextCursor = direction === "horizontal" ? "col-resize" : "row-resize";
       document.body.style.cursor = nextCursor;
       event.preventDefault();
       event.stopPropagation();
-      const pointerId = event.nativeEvent.pointerId;
       const pointerCaptureElement = hitAreaElement;
       pointerCaptureElement.setPointerCapture?.(pointerId);
       resetWindowHorizontalScroll();
 
       function cleanup() {
-        pointerStateRef.current = null;
-        setDragging(false);
-        document.body.style.cursor = previousCursor;
+        pointerStatesRef.current.delete(pointerId);
+        setDragging(pointerStatesRef.current.size > 0);
+        if (pointerStatesRef.current.size === 0) {
+          document.body.style.cursor = cursorBeforeDragRef.current ?? "";
+          cursorBeforeDragRef.current = null;
+        }
         if (pointerCaptureElement.hasPointerCapture?.(pointerId)) {
           pointerCaptureElement.releasePointerCapture(pointerId);
         }
@@ -92,7 +102,7 @@ export function ResizeHandle({
           return;
         }
 
-        const pointerState = pointerStateRef.current;
+        const pointerState = pointerStatesRef.current.get(pointerId);
         if (!pointerState) {
           return;
         }
