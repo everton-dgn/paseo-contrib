@@ -179,6 +179,8 @@ async function main() {
         return;
       }
       supervisorExitRequested = true;
+      // If the supervisor disappears, there is no owner left to restart or
+      // reap this worker. Exit immediately instead of becoming an orphan daemon.
       logger.warn({ supervisorPid, reason }, "Supervisor unavailable, exiting daemon worker");
       process.exit(0);
     };
