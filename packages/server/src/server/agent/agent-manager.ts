@@ -1169,13 +1169,20 @@ export class AgentManager {
     const normalizedModelId =
       typeof modelId === "string" && modelId.trim().length > 0 ? modelId : null;
 
-    if (agent.session.setModel) {
-      await agent.session.setModel(normalizedModelId);
-    }
+    const update = agent.session.setModel
+      ? await agent.session.setModel(normalizedModelId)
+      : undefined;
 
     agent.config.model = normalizedModelId ?? undefined;
+    if (update && Object.hasOwn(update, "thinkingOptionId")) {
+      agent.config.thinkingOptionId = update.thinkingOptionId ?? undefined;
+    }
     if (agent.runtimeInfo) {
-      agent.runtimeInfo = { ...agent.runtimeInfo, model: normalizedModelId };
+      agent.runtimeInfo = {
+        ...agent.runtimeInfo,
+        model: normalizedModelId,
+        thinkingOptionId: agent.config.thinkingOptionId ?? null,
+      };
     }
     this.touchUpdatedAt(agent);
     this.emitState(agent);
@@ -1210,8 +1217,22 @@ export class AgentManager {
       throw new Error("Agent session does not support setting features");
     }
 
-    await agent.session.setFeature(featureId, value);
+    const featureUpdate = await agent.session.setFeature(featureId, value);
     agent.config.featureValues = { ...agent.config.featureValues, [featureId]: value };
+    if (featureUpdate && Object.prototype.hasOwnProperty.call(featureUpdate, "thinkingOptionId")) {
+      const normalizedThinkingOptionId =
+        typeof featureUpdate.thinkingOptionId === "string" &&
+        featureUpdate.thinkingOptionId.trim().length > 0
+          ? featureUpdate.thinkingOptionId
+          : null;
+      agent.config.thinkingOptionId = normalizedThinkingOptionId ?? undefined;
+      if (agent.runtimeInfo) {
+        agent.runtimeInfo = {
+          ...agent.runtimeInfo,
+          thinkingOptionId: normalizedThinkingOptionId,
+        };
+      }
+    }
     this.touchUpdatedAt(agent);
     this.emitState(agent);
   }

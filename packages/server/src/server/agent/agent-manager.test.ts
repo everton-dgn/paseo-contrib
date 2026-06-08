@@ -1966,6 +1966,85 @@ test("session config drift events update state through the stream channel", asyn
   expect(streams.map((event) => event.type)).toEqual([]);
 });
 
+test("setAgentFeature applies provider-returned thinking option changes", async () => {
+  const workdir = mkdtempSync(join(tmpdir(), "agent-manager-feature-thinking-"));
+
+  class FeatureThinkingSession extends TestAgentSession {
+    async setFeature(featureId: string, value: unknown) {
+      expect(featureId).toBe("ultracode");
+      expect(value).toBe(true);
+      return { thinkingOptionId: "xhigh" };
+    }
+  }
+
+  class FeatureThinkingClient extends TestAgentClient {
+    override async createSession(config: AgentSessionConfig): Promise<AgentSession> {
+      return new FeatureThinkingSession(config);
+    }
+  }
+
+  const manager = new AgentManager({
+    clients: {
+      codex: new FeatureThinkingClient(),
+    },
+    logger,
+    idFactory: () => "00000000-0000-4000-8000-000000000134",
+  });
+
+  const snapshot = await manager.createAgent({
+    provider: "codex",
+    cwd: workdir,
+    thinkingOptionId: "medium",
+  });
+
+  await manager.setAgentFeature(snapshot.id, "ultracode", true);
+
+  const agent = manager.getAgent(snapshot.id);
+  expect(agent?.config.featureValues).toEqual({ ultracode: true });
+  expect(agent?.config.thinkingOptionId).toBe("xhigh");
+  expect(agent?.runtimeInfo).toMatchObject({ thinkingOptionId: "xhigh" });
+});
+
+test("setAgentModel reflects provider-cleared thinking option in runtime info", async () => {
+  const workdir = mkdtempSync(join(tmpdir(), "agent-manager-model-thinking-"));
+
+  class ModelClearsThinkingSession extends TestAgentSession {
+    async setModel(): Promise<{ thinkingOptionId: null }> {
+      return { thinkingOptionId: null };
+    }
+  }
+
+  class ModelClearsThinkingClient extends TestAgentClient {
+    override async createSession(config: AgentSessionConfig): Promise<AgentSession> {
+      return new ModelClearsThinkingSession(config);
+    }
+  }
+
+  const manager = new AgentManager({
+    clients: {
+      codex: new ModelClearsThinkingClient(),
+    },
+    logger,
+    idFactory: () => "00000000-0000-4000-8000-000000000135",
+  });
+
+  const snapshot = await manager.createAgent({
+    provider: "codex",
+    cwd: workdir,
+    model: "opus",
+    thinkingOptionId: "xhigh",
+  });
+  await manager.setAgentThinkingOption(snapshot.id, "xhigh");
+  await manager.setAgentModel(snapshot.id, "sonnet");
+
+  const agent = manager.getAgent(snapshot.id);
+  expect(agent?.config.thinkingOptionId).toBeUndefined();
+  expect(agent?.runtimeInfo).toMatchObject({
+    model: "sonnet",
+    thinkingOptionId: null,
+  });
+});
+
 test("setLabels merges and persists labels", async () => {
   const workdir = mkdtempSync(join(tmpdir(), "agent-manager-set-labels-"));
   const storagePath = join(workdir, "agents");

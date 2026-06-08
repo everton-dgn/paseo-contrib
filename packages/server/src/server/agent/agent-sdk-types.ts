@@ -559,6 +559,12 @@ export interface AgentCreateSessionOptions {
   persistSession?: boolean;
 }
 
+export interface AgentConfigurationUpdateResult {
+  thinkingOptionId?: string | null;
+}
+
+export interface AgentFeatureUpdateResult extends AgentConfigurationUpdateResult {}
+
 /**
  * Returned by respondToPermission when the permission resolution requires
  * a follow-up turn (e.g. Codex plan approval → implementation).
@@ -589,9 +595,9 @@ export interface AgentSession {
   interrupt(): Promise<void>;
   close(): Promise<void>;
   listCommands?(): Promise<AgentSlashCommand[]>;
-  setModel?(modelId: string | null): Promise<void>;
+  setModel?(modelId: string | null): Promise<AgentConfigurationUpdateResult | void>;
   setThinkingOption?(thinkingOptionId: string | null): Promise<void>;
-  setFeature?(featureId: string, value: unknown): Promise<void>;
+  setFeature?(featureId: string, value: unknown): Promise<AgentFeatureUpdateResult | void>;
   revertConversation?(input: { messageId: string }): Promise<void>;
   revertFiles?(input: { messageId: string }): Promise<void>;
   revertBoth?(input: { messageId: string }): Promise<void>;
