@@ -16,7 +16,6 @@ import { getAvailablePort } from "./helpers/network.ts";
 $.verbose = false;
 
 const pollIntervalMs = 100;
-const workerSupervisorDisconnectTimeoutMs = 45000;
 const testEnv = {
   PASEO_LOCAL_SPEECH_AUTO_DOWNLOAD: process.env.PASEO_LOCAL_SPEECH_AUTO_DOWNLOAD ?? "0",
   PASEO_DICTATION_ENABLED: process.env.PASEO_DICTATION_ENABLED ?? "0",
@@ -173,7 +172,7 @@ try {
   );
   await waitFor(
     () => !isProcessRunning(workerPid),
-    workerSupervisorDisconnectTimeoutMs,
+    15000,
     "worker remained running after supervisor IPC disconnect",
   );
   console.log("✓ worker exited after supervisor disconnect\n");
