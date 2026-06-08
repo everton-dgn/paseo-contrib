@@ -50,6 +50,7 @@ describe("OpenCodeAgentSession slash command timeout handling", () => {
   test("executes compact through the OpenCode summarize endpoint", async () => {
     const runtime = new TestOpenCodeRuntime();
     const openCodeClient = createOpenCodeClientWithConnectedProvider();
+    openCodeClient.sessionSummarizeEvents = [idleEvent()];
     runtime.enqueueClient(openCodeClient);
 
     const client = new OpenCodeAgentClient(createTestLogger(), undefined, { runtime });

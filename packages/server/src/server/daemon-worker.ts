@@ -173,13 +173,14 @@ async function main() {
 
     const supervisorPid = process.ppid;
     let lastSupervisorHeartbeatAt = Date.now();
-    let supervisorShutdownRequested = false;
-    const requestSupervisorShutdown = (reason: string) => {
-      if (supervisorShutdownRequested) {
+    let supervisorExitRequested = false;
+    const exitAfterSupervisorLoss = (reason: string) => {
+      if (supervisorExitRequested) {
         return;
       }
-      supervisorShutdownRequested = true;
-      beginShutdown(reason);
+      supervisorExitRequested = true;
+      logger.warn({ supervisorPid, reason }, "Supervisor unavailable, exiting daemon worker");
+      process.exit(0);
     };
 
     process.on("message", (message: unknown) => {
@@ -192,13 +193,13 @@ async function main() {
         lastSupervisorHeartbeatAt = Date.now();
       }
     });
-    process.on("disconnect", () => requestSupervisorShutdown("supervisor disconnect"));
+    process.on("disconnect", () => exitAfterSupervisorLoss("supervisor disconnect"));
 
     const timer = setInterval(() => {
       const ipcConnected = typeof process.connected === "boolean" ? process.connected : true;
       const heartbeatExpired = Date.now() - lastSupervisorHeartbeatAt > 3500;
       if (ipcConnected === false || !isPidAlive(supervisorPid) || heartbeatExpired) {
-        requestSupervisorShutdown("supervisor disconnect");
+        exitAfterSupervisorLoss("supervisor disconnect");
       }
     }, 1000);
     timer.unref();
