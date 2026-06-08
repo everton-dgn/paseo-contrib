@@ -597,6 +597,25 @@ describe("ClaudeAgentSession features", () => {
     });
   });
 
+  test("resolves Ultracode create config against the default Opus model", () => {
+    const client = new ClaudeAgentClient({ logger, resolveBinary: async () => "/test/claude/bin" });
+
+    expect(
+      client.resolveCreateConfig({
+        provider: "claude",
+        requestedMode: undefined,
+        featureValues: { ultracode: true },
+        parent: null,
+        unattended: false,
+        availableModes: undefined,
+      }),
+    ).toEqual({
+      modeId: undefined,
+      thinkingOptionId: "xhigh",
+      featureValues: { ultracode: true },
+    });
+  });
+
   test("rejects Ultracode create config on unsupported models", () => {
     const client = new ClaudeAgentClient({ logger, resolveBinary: async () => "/test/claude/bin" });
 

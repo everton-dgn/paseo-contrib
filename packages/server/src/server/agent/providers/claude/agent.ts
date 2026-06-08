@@ -115,6 +115,7 @@ const CLAUDE_MODEL_DISCOVERY_SETTING_SOURCES: NonNullable<ClaudeOptions["setting
   "user",
   "project",
 ];
+const CLAUDE_DEFAULT_MODEL_ALIAS = "opus";
 const CLAUDE_SUPPORTED_MODELS_TIMEOUT_MS = 15_000;
 const CLAUDE_SCRATCH_QUERY_CLOSE_TIMEOUT_MS = 3_000;
 
@@ -1421,7 +1422,8 @@ export class ClaudeAgentClient implements AgentClient {
     if (resolved.featureValues?.ultracode !== true) {
       return resolved;
     }
-    if (!claudeModelSupportsUltracode(input.model)) {
+    const modelForFeatureValidation = input.model ?? CLAUDE_DEFAULT_MODEL_ALIAS;
+    if (!claudeModelSupportsUltracode(modelForFeatureValidation)) {
       throw new Error(`Claude Ultracode is not available for model '${input.model ?? "default"}'`);
     }
     return { ...resolved, thinkingOptionId: "xhigh" };
