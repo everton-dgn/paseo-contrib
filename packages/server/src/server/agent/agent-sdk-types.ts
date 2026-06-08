@@ -564,9 +564,8 @@ export interface AgentCreateSessionOptions {
 
 export interface AgentConfigurationUpdateResult {
   thinkingOptionId?: string | null;
+  featureValues?: Record<string, unknown>;
 }
-
-export interface AgentFeatureUpdateResult extends AgentConfigurationUpdateResult {}
 
 /**
  * Returned by respondToPermission when the permission resolution requires
@@ -599,8 +598,10 @@ export interface AgentSession {
   close(): Promise<void>;
   listCommands?(): Promise<AgentSlashCommand[]>;
   setModel?(modelId: string | null): Promise<AgentConfigurationUpdateResult | void>;
-  setThinkingOption?(thinkingOptionId: string | null): Promise<void>;
-  setFeature?(featureId: string, value: unknown): Promise<AgentFeatureUpdateResult | void>;
+  setThinkingOption?(
+    thinkingOptionId: string | null,
+  ): Promise<AgentConfigurationUpdateResult | void>;
+  setFeature?(featureId: string, value: unknown): Promise<AgentConfigurationUpdateResult | void>;
   revertConversation?(input: { messageId: string }): Promise<void>;
   revertFiles?(input: { messageId: string }): Promise<void>;
   revertBoth?(input: { messageId: string }): Promise<void>;

@@ -725,6 +725,7 @@ describe("ClaudeAgentSession features", () => {
     ).ensureQuery();
     await expect(session.setFeature?.("ultracode", true)).resolves.toEqual({
       thinkingOptionId: "xhigh",
+      featureValues: { ultracode: true },
     });
 
     expect(queryFactory).toHaveBeenCalledTimes(1);
@@ -773,7 +774,9 @@ describe("ClaudeAgentSession features", () => {
         ensureQuery(): Promise<unknown>;
       }
     ).ensureQuery();
-    await session.setThinkingOption?.("medium");
+    await expect(session.setThinkingOption?.("medium")).resolves.toEqual({
+      featureValues: { ultracode: false },
+    });
 
     expect(queryMock.applyFlagSettings).toHaveBeenLastCalledWith({ ultracode: false });
 
@@ -802,6 +805,7 @@ describe("ClaudeAgentSession features", () => {
     ).ensureQuery();
     await expect(session.setModel?.("claude-sonnet-4-6")).resolves.toEqual({
       thinkingOptionId: null,
+      featureValues: { ultracode: false },
     });
 
     expect(queryMock.setModel).toHaveBeenLastCalledWith("claude-sonnet-4-6");

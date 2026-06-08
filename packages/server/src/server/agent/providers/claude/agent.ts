@@ -66,7 +66,6 @@ import {
   type AgentConfigurationUpdateResult,
   type AgentCreateSessionOptions,
   type AgentFeature,
-  type AgentFeatureUpdateResult,
   type AgentLaunchContext,
   type AgentMetadata,
   type AgentMode,
@@ -2009,27 +2008,35 @@ class ClaudeAgentSession implements AgentSession {
     await activeQuery.setModel(normalizedModelId ?? undefined);
     this.config.model = normalizedModelId ?? undefined;
     let thinkingOptionId: string | null | undefined;
+    let featureValues: Record<string, unknown> | undefined;
     if (!claudeModelSupportsThinkingOption(this.config.model, this.config.thinkingOptionId)) {
       this.config.thinkingOptionId = undefined;
       thinkingOptionId = null;
     }
     if (!claudeModelSupportsFastMode(this.config.model) && this.config.featureValues?.fast_mode) {
       await this.applyFastModeFeature(false, activeQuery);
+      featureValues = this.config.featureValues;
     }
     if (!claudeModelSupportsUltracode(this.config.model) && this.config.featureValues?.ultracode) {
       await this.applyUltracodeFeature(false, activeQuery);
+      featureValues = this.config.featureValues;
     }
     this.lastOptionsModel = normalizedModelId ?? this.lastOptionsModel;
     this.lastRuntimeModel = null;
     this.cachedRuntimeInfo = null;
     // Model change affects persistence metadata, so invalidate cached handle.
     this.persistence = null;
-    if (thinkingOptionId !== undefined) {
-      return { thinkingOptionId };
+    if (thinkingOptionId !== undefined || featureValues !== undefined) {
+      return {
+        ...(thinkingOptionId !== undefined ? { thinkingOptionId } : {}),
+        ...(featureValues !== undefined ? { featureValues } : {}),
+      };
     }
   }
 
-  async setThinkingOption(thinkingOptionId: string | null): Promise<void> {
+  async setThinkingOption(
+    thinkingOptionId: string | null,
+  ): Promise<AgentConfigurationUpdateResult | void> {
     const normalizedThinkingOptionId =
       typeof thinkingOptionId === "string" && thinkingOptionId.trim().length > 0
         ? thinkingOptionId
@@ -2042,13 +2049,21 @@ class ClaudeAgentSession implements AgentSession {
     } else {
       throw new Error(`Unknown thinking option: ${normalizedThinkingOptionId}`);
     }
+    let featureValues: Record<string, unknown> | undefined;
     if (this.config.featureValues?.ultracode === true && this.config.thinkingOptionId !== "xhigh") {
       await this.applyUltracodeFeature(false);
+      featureValues = this.config.featureValues;
     }
     this.queryRestartNeeded = true;
+    if (featureValues !== undefined) {
+      return { featureValues };
+    }
   }
 
-  async setFeature(featureId: string, value: unknown): Promise<AgentFeatureUpdateResult | void> {
+  async setFeature(
+    featureId: string,
+    value: unknown,
+  ): Promise<AgentConfigurationUpdateResult | void> {
     const enabled = assertClaudeFeatureToggleValue(featureId, value);
     switch (featureId) {
       case "fast_mode":
@@ -2086,7 +2101,7 @@ class ClaudeAgentSession implements AgentSession {
   private async applyUltracodeFeature(
     enabled: boolean,
     query?: Query,
-  ): Promise<AgentFeatureUpdateResult | void> {
+  ): Promise<AgentConfigurationUpdateResult> {
     this.config.featureValues = {
       ...this.config.featureValues,
       ultracode: enabled,
@@ -2101,7 +2116,10 @@ class ClaudeAgentSession implements AgentSession {
       await activeQuery.applyFlagSettings(settings);
     }
     this.cachedRuntimeInfo = null;
-    return enabled ? { thinkingOptionId: "xhigh" } : undefined;
+    return {
+      ...(enabled ? { thinkingOptionId: "xhigh" } : {}),
+      featureValues: this.config.featureValues,
+    };
   }
 
   getPendingPermissions(): AgentPermissionRequest[] {

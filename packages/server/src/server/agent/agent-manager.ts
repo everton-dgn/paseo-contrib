@@ -1175,8 +1175,11 @@ export class AgentManager {
       : undefined;
 
     agent.config.model = normalizedModelId ?? undefined;
-    if (update && Object.hasOwn(update, "thinkingOptionId")) {
+    if (update && Object.prototype.hasOwnProperty.call(update, "thinkingOptionId")) {
       agent.config.thinkingOptionId = update.thinkingOptionId ?? undefined;
+    }
+    if (update?.featureValues !== undefined) {
+      agent.config.featureValues = update.featureValues;
     }
     if (agent.runtimeInfo) {
       agent.runtimeInfo = {
@@ -1197,14 +1200,23 @@ export class AgentManager {
         : null;
 
     if (agent.session.setThinkingOption) {
-      await agent.session.setThinkingOption(normalizedThinkingOptionId);
+      const update = await agent.session.setThinkingOption(normalizedThinkingOptionId);
+      if (update?.featureValues !== undefined) {
+        agent.config.featureValues = update.featureValues;
+      }
+      if (update && Object.prototype.hasOwnProperty.call(update, "thinkingOptionId")) {
+        agent.config.thinkingOptionId = update.thinkingOptionId ?? undefined;
+      } else {
+        agent.config.thinkingOptionId = normalizedThinkingOptionId ?? undefined;
+      }
+    } else {
+      agent.config.thinkingOptionId = normalizedThinkingOptionId ?? undefined;
     }
 
-    agent.config.thinkingOptionId = normalizedThinkingOptionId ?? undefined;
     if (agent.runtimeInfo) {
       agent.runtimeInfo = {
         ...agent.runtimeInfo,
-        thinkingOptionId: normalizedThinkingOptionId,
+        thinkingOptionId: agent.config.thinkingOptionId ?? null,
       };
     }
     this.touchUpdatedAt(agent);
@@ -1219,7 +1231,10 @@ export class AgentManager {
     }
 
     const featureUpdate = await agent.session.setFeature(featureId, value);
-    agent.config.featureValues = { ...agent.config.featureValues, [featureId]: value };
+    agent.config.featureValues = featureUpdate?.featureValues ?? {
+      ...agent.config.featureValues,
+      [featureId]: value,
+    };
     if (featureUpdate && Object.prototype.hasOwnProperty.call(featureUpdate, "thinkingOptionId")) {
       const normalizedThinkingOptionId =
         typeof featureUpdate.thinkingOptionId === "string" &&
@@ -3535,7 +3550,7 @@ export class AgentManager {
       return config;
     }
     if (!client.listFeatures) {
-      throw new Error(`Provider '${config.provider}' does not advertise configurable features`);
+      return config;
     }
     const featureValues = validateAgentFeatureValues(
       config.featureValues,

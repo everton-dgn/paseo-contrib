@@ -26,7 +26,6 @@ import {
   ListTodo,
   Settings2,
   ShieldCheck,
-  Sparkles,
   Zap,
 } from "lucide-react-native";
 import { getProviderIcon } from "@/components/provider-icons";
@@ -161,7 +160,6 @@ function findOptionLabel(
 const FEATURE_ICONS: Record<string, typeof Zap> = {
   "list-todo": ListTodo,
   "shield-check": ShieldCheck,
-  sparkles: Sparkles,
   zap: Zap,
 };
 
