@@ -31,16 +31,20 @@ describe("OpenCodeAgentSession slash command timeout handling", () => {
     const client = new OpenCodeAgentClient(createTestLogger(), undefined, { runtime });
     const session = await client.createSession({ provider: "opencode", cwd: "/tmp" });
 
-    await expect(session.listCommands?.()).resolves.toEqual(
-      expect.arrayContaining([
-        { name: "compact", description: "Compact the current session", argumentHint: "" },
-      ]),
-    );
-    await expect(session.listCommands?.()).resolves.not.toEqual(
-      expect.arrayContaining([
-        { name: "models", description: expect.any(String), argumentHint: "" },
-      ]),
-    );
+    try {
+      await expect(session.listCommands?.()).resolves.toEqual(
+        expect.arrayContaining([
+          { name: "compact", description: "Compact the current session", argumentHint: "" },
+        ]),
+      );
+      await expect(session.listCommands?.()).resolves.not.toEqual(
+        expect.arrayContaining([
+          { name: "models", description: expect.any(String), argumentHint: "" },
+        ]),
+      );
+    } finally {
+      await session.close();
+    }
   });
 
   test("executes compact through the OpenCode summarize endpoint", async () => {
@@ -51,16 +55,20 @@ describe("OpenCodeAgentSession slash command timeout handling", () => {
     const client = new OpenCodeAgentClient(createTestLogger(), undefined, { runtime });
     const session = await client.createSession({ provider: "opencode", cwd: "/tmp" });
 
-    await expect(session.run("/compact")).resolves.toMatchObject({
-      sessionId: "session-1",
-      finalText: "",
-      timeline: [],
-      usage: undefined,
-    });
-    expect(openCodeClient.calls.sessionSummarize).toEqual([
-      { sessionID: "session-1", directory: "/tmp" },
-    ]);
-    expect(openCodeClient.calls.sessionCommand).toEqual([]);
+    try {
+      await expect(session.run("/compact")).resolves.toMatchObject({
+        sessionId: "session-1",
+        finalText: "",
+        timeline: [],
+        usage: undefined,
+      });
+      expect(openCodeClient.calls.sessionSummarize).toEqual([
+        { sessionID: "session-1", directory: "/tmp" },
+      ]);
+      expect(openCodeClient.calls.sessionCommand).toEqual([]);
+    } finally {
+      await session.close();
+    }
   });
 
   test("waits for SSE completion when slash commands hit a header timeout", async () => {
@@ -83,16 +91,20 @@ describe("OpenCodeAgentSession slash command timeout handling", () => {
     const client = new OpenCodeAgentClient(createTestLogger(), undefined, { runtime });
     const session = await client.createSession({ provider: "opencode", cwd: "/tmp" });
 
-    const runPromise = session.run("/help");
-    await Promise.resolve();
-    idleEventGate.resolve();
+    try {
+      const runPromise = session.run("/help");
+      await Promise.resolve();
+      idleEventGate.resolve();
 
-    await expect(runPromise).resolves.toMatchObject({
-      sessionId: "session-1",
-      finalText: "",
-      timeline: [],
-      usage: undefined,
-    });
+      await expect(runPromise).resolves.toMatchObject({
+        sessionId: "session-1",
+        finalText: "",
+        timeline: [],
+        usage: undefined,
+      });
+    } finally {
+      await session.close();
+    }
   });
 
   test("leaves successful slash command turns open until OpenCode emits idle", async () => {
@@ -107,27 +119,31 @@ describe("OpenCodeAgentSession slash command timeout handling", () => {
     const client = new OpenCodeAgentClient(createTestLogger(), undefined, { runtime });
     const session = await client.createSession({ provider: "opencode", cwd: "/tmp" });
 
-    const runPromise = session.run("/help");
-    await nextTick();
-    await nextTick();
+    try {
+      const runPromise = session.run("/help");
+      await nextTick();
+      await nextTick();
 
-    expect(openCodeClient.calls.sessionCommand).toHaveLength(1);
-    let settled = false;
-    void runPromise.then(() => {
-      settled = true;
-      return undefined;
-    });
-    await nextTick();
-    expect(settled).toBe(false);
+      expect(openCodeClient.calls.sessionCommand).toHaveLength(1);
+      let settled = false;
+      void runPromise.then(() => {
+        settled = true;
+        return undefined;
+      });
+      await nextTick();
+      expect(settled).toBe(false);
 
-    openCodeClient.emitEvent(idleEvent());
+      openCodeClient.emitEvent(idleEvent());
 
-    await expect(runPromise).resolves.toMatchObject({
-      sessionId: "session-1",
-      finalText: "",
-      timeline: [],
-      usage: undefined,
-    });
+      await expect(runPromise).resolves.toMatchObject({
+        sessionId: "session-1",
+        finalText: "",
+        timeline: [],
+        usage: undefined,
+      });
+    } finally {
+      await session.close();
+    }
   });
 });
 

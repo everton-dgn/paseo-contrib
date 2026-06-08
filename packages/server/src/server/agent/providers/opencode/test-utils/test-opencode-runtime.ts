@@ -121,6 +121,7 @@ export class TestOpenCodeClient {
       event: {
         subscribe: async (parameters: unknown, options: unknown) => {
           this.calls.eventSubscribe.push({ parameters, options });
+          closeQueuedEventStreamOnAbort(this.queuedEventStream, options);
           return { stream: this.eventStream };
         },
       },
@@ -135,6 +136,7 @@ export class TestOpenCodeClient {
       global: {
         event: async (options: unknown) => {
           this.calls.globalEvent.push(options);
+          closeQueuedEventStreamOnAbort(this.queuedEventStream, options);
           return { stream: this.eventStream };
         },
       },
@@ -230,14 +232,19 @@ export function createEventStream(events: unknown[]): AsyncGenerator<unknown> {
 function createQueuedEventStream(): {
   stream: AsyncIterable<unknown>;
   emit: (event: unknown) => void;
+  close: () => void;
 } {
   const queue: unknown[] = [];
   const waiters: Array<(result: IteratorResult<unknown>) => void> = [];
+  let closed = false;
 
   return {
     stream: {
       [Symbol.asyncIterator]: () => ({
         next: () => {
+          if (closed) {
+            return Promise.resolve({ done: true, value: undefined });
+          }
           const event = queue.shift();
           if (event !== undefined) {
             return Promise.resolve({ done: false, value: event });
@@ -249,6 +256,9 @@ function createQueuedEventStream(): {
       }),
     },
     emit: (event: unknown) => {
+      if (closed) {
+        return;
+      }
       const waiter = waiters.shift();
       if (waiter) {
         waiter({ done: false, value: event });
@@ -256,7 +266,40 @@ function createQueuedEventStream(): {
       }
       queue.push(event);
     },
+    close: () => {
+      if (closed) {
+        return;
+      }
+      closed = true;
+      queue.length = 0;
+      for (const waiter of waiters.splice(0)) {
+        waiter({ done: true, value: undefined });
+      }
+    },
   };
+}
+
+function closeQueuedEventStreamOnAbort(
+  queuedEventStream: { close: () => void },
+  options: unknown,
+): void {
+  const signal = readAbortSignal(options);
+  if (!signal) {
+    return;
+  }
+  if (signal.aborted) {
+    queuedEventStream.close();
+    return;
+  }
+  signal.addEventListener("abort", () => queuedEventStream.close(), { once: true });
+}
+
+function readAbortSignal(options: unknown): AbortSignal | null {
+  if (typeof options !== "object" || options === null || !("signal" in options)) {
+    return null;
+  }
+  const signal = (options as { signal?: unknown }).signal;
+  return signal instanceof AbortSignal ? signal : null;
 }
 
 export function idleEvent(): unknown {
