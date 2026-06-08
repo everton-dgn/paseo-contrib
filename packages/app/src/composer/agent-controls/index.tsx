@@ -163,8 +163,7 @@ const FEATURE_ICONS: Record<string, typeof Zap> = {
   zap: Zap,
 };
 
-const ULTRACODE_ACTIVE_COLOR = "#8C50F0";
-const ULTRACODE_ACTIVE_DARK_COLOR = "#A06AF5";
+const ULTRACODE_ACTIVE_COLOR = "#A06AF5";
 
 function getFeatureIcon(featureId: string, icon?: string) {
   if (featureId === "ultracode") {
@@ -177,7 +176,6 @@ function getFeatureIcon(featureId: string, icon?: string) {
 function getFeatureIconColor(
   featureId: string,
   enabled: boolean,
-  colorScheme: "dark" | "light",
   palette: {
     blue: { 400: string };
     green: { 400: string };
@@ -195,7 +193,7 @@ function getFeatureIconColor(
     case "green":
       return palette.green[400];
     case "purple":
-      return colorScheme === "dark" ? ULTRACODE_ACTIVE_DARK_COLOR : ULTRACODE_ACTIVE_COLOR;
+      return ULTRACODE_ACTIVE_COLOR;
     case "yellow":
       return palette.yellow[400];
     default:
@@ -1190,7 +1188,6 @@ function DesktopFeatureItem({
               color={getFeatureIconColor(
                 feature.id,
                 feature.value,
-                theme.colorScheme,
                 theme.colors.palette,
                 theme.colors.foregroundMuted,
               )}
@@ -1304,7 +1301,6 @@ function SheetFeatureItem({
             color={getFeatureIconColor(
               feature.id,
               feature.value,
-              theme.colorScheme,
               theme.colors.palette,
               theme.colors.foregroundMuted,
             )}
