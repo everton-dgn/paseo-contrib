@@ -174,14 +174,15 @@ async function main() {
     const supervisorPid = process.ppid;
     let lastSupervisorHeartbeatAt = Date.now();
     let supervisorExitRequested = false;
-    const exitAfterSupervisorLoss = (reason: string) => {
+    const exitAfterSupervisorLoss = () => {
       if (supervisorExitRequested) {
         return;
       }
       supervisorExitRequested = true;
-      // If the supervisor disappears, there is no owner left to restart or
-      // reap this worker. Exit immediately instead of becoming an orphan daemon.
-      logger.warn({ supervisorPid, reason }, "Supervisor unavailable, exiting daemon worker");
+
+      // The supervisor owns the worker's stdout/stderr pipes. Once it is gone,
+      // logging during graceful shutdown can block on the broken pipe and leave
+      // the daemon orphaned, so supervisor loss is a hard process boundary.
       process.exit(0);
     };
 
@@ -195,13 +196,19 @@ async function main() {
         lastSupervisorHeartbeatAt = Date.now();
       }
     });
-    process.on("disconnect", () => exitAfterSupervisorLoss("supervisor disconnect"));
+    process.on("disconnect", exitAfterSupervisorLoss);
 
     const timer = setInterval(() => {
       const ipcConnected = typeof process.connected === "boolean" ? process.connected : true;
       const heartbeatExpired = Date.now() - lastSupervisorHeartbeatAt > 3500;
-      if (ipcConnected === false || !isPidAlive(supervisorPid) || heartbeatExpired) {
-        exitAfterSupervisorLoss("supervisor disconnect");
+      const supervisorChanged = process.ppid !== supervisorPid;
+      if (
+        ipcConnected === false ||
+        supervisorChanged ||
+        !isPidAlive(supervisorPid) ||
+        heartbeatExpired
+      ) {
+        exitAfterSupervisorLoss();
       }
     }, 1000);
     timer.unref();

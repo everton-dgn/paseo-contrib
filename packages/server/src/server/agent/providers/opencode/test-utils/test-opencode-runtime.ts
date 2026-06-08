@@ -92,7 +92,7 @@ export class TestOpenCodeClient {
   sessionMessagesResponse: OpenCodeResponse = { data: [] };
   sessionPromptAsyncEvents: unknown[] = [idleEvent()];
   sessionPromptAsyncResponse: OpenCodeResponse = {};
-  sessionSummarizeEvents: unknown[] = [];
+  sessionSummarizeEvents: unknown[] = [idleEvent()];
   sessionSummarizeResponse: OpenCodeResponse = { data: {} };
   sessionUpdateResponse: OpenCodeResponse = {};
   private readonly queuedEventStream = createQueuedEventStream();

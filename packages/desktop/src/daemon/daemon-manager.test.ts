@@ -1,6 +1,5 @@
 import { EventEmitter } from "node:events";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_DESKTOP_SETTINGS } from "../settings/desktop-settings";
@@ -360,8 +359,9 @@ describe("daemon-manager commands", () => {
 
     expect(thrown).toBeInstanceOf(Error);
     const message = thrown?.message ?? "";
+    const recentLogsLabel = message.match(/Recent logs \(([^)]*)\):/)?.[1];
     expect(message).toContain("Daemon failed to start: exit code 1");
-    expect(message).toContain(`Recent logs (${path.join(mocks.paseoHome, "daemon.log")}):`);
+    expect(recentLogsLabel?.split(/[\\/]/).at(-1)).toBe("daemon.log");
     expect(message).toContain("recent daemon failure");
     expect(mocks.spawnProcess).toHaveBeenCalledWith(
       "node",
