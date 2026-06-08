@@ -16,6 +16,9 @@ env:
   # CI does not use the CUDA execution provider, and the onnxruntime-node
   # postinstall download from NuGet is large enough to make npm ci flaky.
   ONNXRUNTIME_NODE_INSTALL: skip
+  # CI tests import Electron APIs through mocks; the hosted Electron binary is
+  # only needed for release/package builds and can fail npm ci with CDN 504s.
+  ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
 
 jobs:
   format:
