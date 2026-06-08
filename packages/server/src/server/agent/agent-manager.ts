@@ -55,6 +55,7 @@ import {
 import { ForegroundRunState, type ForegroundTurnWaiter } from "./foreground-run-state.js";
 import { getAgentProviderDefinition } from "@getpaseo/protocol/provider-manifest";
 import { IMPORTABLE_PROVIDERS } from "./provider-registry.js";
+import { validateAgentFeatureValues } from "./feature-values.js";
 import { invokeRewindCapability, type RewindMode } from "./rewind/rewind.js";
 import { isSystemInjectedEnvelope } from "./agent-prompt.js";
 import { stripInternalPaseoMcpServer, withRuntimePaseoMcpServer } from "./runtime-mcp-config.js";
@@ -3483,7 +3484,8 @@ export class AgentManager {
     config: AgentSessionConfig,
     agentId: string,
   ): Promise<PreparedSessionConfig> {
-    const storedConfig = await this.normalizeConfig(stripInternalPaseoMcpServer(config));
+    const normalizedConfig = await this.normalizeConfig(stripInternalPaseoMcpServer(config));
+    const storedConfig = await this.resolveProviderCreateConfigForSession(normalizedConfig);
     const launchConfig = this.applyDaemonAppendSystemPrompt(
       withRuntimePaseoMcpServer({
         config: storedConfig,
@@ -3492,6 +3494,55 @@ export class AgentManager {
       }),
     );
     return { storedConfig, launchConfig };
+  }
+
+  private async resolveProviderCreateConfigForSession(
+    config: AgentSessionConfig,
+  ): Promise<AgentSessionConfig> {
+    const client = this.clients.get(config.provider);
+    if (!client) {
+      return config;
+    }
+    const resolved = client.resolveCreateConfig?.({
+      provider: config.provider,
+      requestedMode: config.modeId,
+      ...(config.model ? { model: config.model } : {}),
+      ...(config.thinkingOptionId ? { thinkingOptionId: config.thinkingOptionId } : {}),
+      featureValues: config.featureValues,
+      parent: null,
+      unattended: false,
+      availableModes: undefined,
+    });
+    const resolvedConfig: AgentSessionConfig = {
+      ...config,
+      ...(resolved?.modeId !== undefined ? { modeId: resolved.modeId } : {}),
+      ...(resolved?.thinkingOptionId !== undefined
+        ? { thinkingOptionId: resolved.thinkingOptionId ?? undefined }
+        : {}),
+      ...(resolved?.featureValues !== undefined ? { featureValues: resolved.featureValues } : {}),
+    };
+    return await this.validateSessionFeatureValues(resolvedConfig);
+  }
+
+  private async validateSessionFeatureValues(
+    config: AgentSessionConfig,
+  ): Promise<AgentSessionConfig> {
+    if (!config.featureValues || Object.keys(config.featureValues).length === 0) {
+      return config;
+    }
+    const client = this.clients.get(config.provider);
+    if (!client) {
+      return config;
+    }
+    if (!client.listFeatures) {
+      throw new Error(`Provider '${config.provider}' does not advertise configurable features`);
+    }
+    const featureValues = validateAgentFeatureValues(
+      config.featureValues,
+      await client.listFeatures(config),
+      { provider: config.provider },
+    );
+    return { ...config, featureValues };
   }
 
   private applyDaemonAppendSystemPrompt(config: AgentSessionConfig): AgentSessionConfig {

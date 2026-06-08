@@ -90,7 +90,10 @@ import {
   type ListPersistedAgentsOptions,
   type McpServerConfig,
   type PersistedAgentDescriptor,
+  type ResolveAgentCreateConfigInput,
+  type ResolveAgentCreateConfigResult,
 } from "../../agent-sdk-types.js";
+import { resolveDefaultAgentCreateConfig } from "../../create-agent-mode.js";
 import {
   checkProviderLaunchAvailable,
   createProviderEnv,
@@ -118,6 +121,13 @@ const CLAUDE_SCRATCH_QUERY_CLOSE_TIMEOUT_MS = 3_000;
 
 function readNonEmptyString(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
+function assertClaudeFeatureToggleValue(featureId: string, value: unknown): boolean {
+  if (typeof value !== "boolean") {
+    throw new Error(`Claude feature '${featureId}' expects a boolean value`);
+  }
+  return value;
 }
 
 export function normalizeClaudeAskUserQuestionUpdatedInput(
@@ -1407,6 +1417,17 @@ export class ClaudeAgentClient implements AgentClient {
     return decorateClaudeModelsWithSdkEfforts(staticModels, sdkModels);
   }
 
+  resolveCreateConfig(input: ResolveAgentCreateConfigInput): ResolveAgentCreateConfigResult {
+    const resolved = resolveDefaultAgentCreateConfig(input);
+    if (resolved.featureValues?.ultracode !== true) {
+      return resolved;
+    }
+    if (!claudeModelSupportsUltracode(input.model)) {
+      throw new Error(`Claude Ultracode is not available for model '${input.model ?? "default"}'`);
+    }
+    return { ...resolved, thinkingOptionId: "xhigh" };
+  }
+
   async shutdown(): Promise<void> {
     const scratchQueries = Array.from(this.scratchQueries);
     await Promise.all(scratchQueries.map((query) => this.returnScratchQuery(query)));
@@ -2028,7 +2049,7 @@ class ClaudeAgentSession implements AgentSession {
   }
 
   async setFeature(featureId: string, value: unknown): Promise<AgentFeatureUpdateResult | void> {
-    const enabled = Boolean(value);
+    const enabled = assertClaudeFeatureToggleValue(featureId, value);
     switch (featureId) {
       case "fast_mode":
         if (enabled && !claudeModelSupportsFastMode(this.config.model)) {

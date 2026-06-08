@@ -553,6 +553,17 @@ describe("ClaudeAgentSession features", () => {
       client.listFeatures({
         provider: "claude",
         cwd: process.cwd(),
+        model: "opus",
+      }),
+    ).resolves.toEqual([
+      expect.objectContaining({ id: "fast_mode", value: false }),
+      expect.objectContaining({ id: "ultracode", value: false }),
+    ]);
+
+    await expect(
+      client.listFeatures({
+        provider: "claude",
+        cwd: process.cwd(),
         model: "claude-sonnet-4-6",
       }),
     ).resolves.toEqual([]);
@@ -564,6 +575,42 @@ describe("ClaudeAgentSession features", () => {
         model: "claude-opus-4-6",
       }),
     ).resolves.toEqual([expect.objectContaining({ id: "fast_mode", value: false })]);
+  });
+
+  test("resolves Ultracode create config to xhigh thinking", () => {
+    const client = new ClaudeAgentClient({ logger, resolveBinary: async () => "/test/claude/bin" });
+
+    expect(
+      client.resolveCreateConfig({
+        provider: "claude",
+        requestedMode: undefined,
+        model: "opus",
+        featureValues: { ultracode: true },
+        parent: null,
+        unattended: false,
+        availableModes: undefined,
+      }),
+    ).toEqual({
+      modeId: undefined,
+      thinkingOptionId: "xhigh",
+      featureValues: { ultracode: true },
+    });
+  });
+
+  test("rejects Ultracode create config on unsupported models", () => {
+    const client = new ClaudeAgentClient({ logger, resolveBinary: async () => "/test/claude/bin" });
+
+    expect(() =>
+      client.resolveCreateConfig({
+        provider: "claude",
+        requestedMode: undefined,
+        model: "claude-sonnet-4-6",
+        featureValues: { ultracode: true },
+        parent: null,
+        unattended: false,
+        availableModes: undefined,
+      }),
+    ).toThrow(/Ultracode is not available/);
   });
 
   test("passes initial fast mode through Claude flag settings", async () => {
@@ -682,6 +729,26 @@ describe("ClaudeAgentSession features", () => {
 
     expect(queryFactory).toHaveBeenCalledTimes(1);
     expect(queryMock.applyFlagSettings).toHaveBeenLastCalledWith({ ultracode: true });
+
+    await session.close();
+  });
+
+  test("rejects non-boolean runtime feature values", async () => {
+    const { queryFactory } = createQueryMock();
+    const client = new ClaudeAgentClient({
+      logger,
+      queryFactory,
+      resolveBinary: async () => "/test/claude/bin",
+    });
+    const session = await client.createSession({
+      provider: "claude",
+      cwd: process.cwd(),
+      model: "claude-opus-4-8",
+    });
+
+    await expect(session.setFeature?.("ultracode", "false")).rejects.toThrow(
+      /expects a boolean value/,
+    );
 
     await session.close();
   });

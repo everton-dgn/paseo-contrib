@@ -6,8 +6,10 @@ const CLAUDE_FAST_MODE_SUPPORTED_MODEL_PREFIXES = [
   "claude-opus-4-7",
   "claude-opus-4-6",
 ] as const;
+const CLAUDE_FAST_MODE_SUPPORTED_MODEL_ALIASES = ["opus"] as const;
 
 const CLAUDE_ULTRACODE_SUPPORTED_MODEL_PREFIXES = ["claude-opus-4-8", "claude-opus-4-7"] as const;
+const CLAUDE_ULTRACODE_SUPPORTED_MODEL_ALIASES = ["opus"] as const;
 
 export const CLAUDE_FAST_MODE_FEATURE: Omit<AgentFeatureToggle, "value"> = {
   type: "toggle",
@@ -39,10 +41,18 @@ function modelIdMatchesPrefix(modelId: string, prefix: string): boolean {
   return modelId === prefix || modelId.startsWith(`${prefix}[`);
 }
 
+function modelIdMatchesAlias(modelId: string, aliases: readonly string[]): boolean {
+  return aliases.includes(modelId);
+}
+
 export function claudeModelSupportsFastMode(modelId: string | null | undefined): boolean {
   const normalizedModelId = normalizeClaudeModelId(modelId);
   if (!normalizedModelId) {
     return false;
+  }
+
+  if (modelIdMatchesAlias(normalizedModelId, CLAUDE_FAST_MODE_SUPPORTED_MODEL_ALIASES)) {
+    return true;
   }
 
   return CLAUDE_FAST_MODE_SUPPORTED_MODEL_PREFIXES.some((prefix) =>
@@ -54,6 +64,10 @@ export function claudeModelSupportsUltracode(modelId: string | null | undefined)
   const normalizedModelId = normalizeClaudeModelId(modelId);
   if (!normalizedModelId) {
     return false;
+  }
+
+  if (modelIdMatchesAlias(normalizedModelId, CLAUDE_ULTRACODE_SUPPORTED_MODEL_ALIASES)) {
+    return true;
   }
 
   return CLAUDE_ULTRACODE_SUPPORTED_MODEL_PREFIXES.some((prefix) =>

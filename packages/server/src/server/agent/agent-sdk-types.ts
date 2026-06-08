@@ -118,6 +118,8 @@ export interface AgentCreateConfigParent {
 export interface ResolveAgentCreateConfigInput {
   provider: AgentProvider;
   requestedMode: string | undefined;
+  model?: string | undefined;
+  thinkingOptionId?: string | undefined;
   featureValues: Record<string, unknown> | undefined;
   parent: AgentCreateConfigParent | null;
   unattended: boolean;
@@ -126,6 +128,7 @@ export interface ResolveAgentCreateConfigInput {
 
 export interface ResolveAgentCreateConfigResult {
   modeId: string | undefined;
+  thinkingOptionId?: string | null;
   featureValues: Record<string, unknown> | undefined;
 }
 

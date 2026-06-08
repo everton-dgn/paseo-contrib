@@ -2005,6 +2005,73 @@ test("setAgentFeature applies provider-returned thinking option changes", async 
   expect(agent?.runtimeInfo).toMatchObject({ thinkingOptionId: "xhigh" });
 });
 
+test("createAgent validates feature values and persists provider-derived thinking option", async () => {
+  const workdir = mkdtempSync(join(tmpdir(), "agent-manager-create-feature-thinking-"));
+
+  class CreateFeatureClient extends TestAgentClient {
+    resolveCreateConfig(input: { featureValues: Record<string, unknown> | undefined }) {
+      return {
+        modeId: undefined,
+        thinkingOptionId: input.featureValues?.ultracode === true ? "xhigh" : undefined,
+        featureValues: input.featureValues,
+      };
+    }
+
+    async listFeatures(config: AgentSessionConfig): Promise<AgentFeature[]> {
+      return [
+        createFeature({
+          id: "ultracode",
+          label: "Ultracode",
+          value: config.featureValues?.ultracode === true,
+        }),
+      ];
+    }
+  }
+
+  const client = new CreateFeatureClient();
+  const manager = new AgentManager({
+    clients: { codex: client },
+    logger,
+    idFactory: () => "00000000-0000-4000-8000-000000000134",
+  });
+
+  const snapshot = await manager.createAgent({
+    provider: "codex",
+    cwd: workdir,
+    featureValues: { ultracode: true },
+  });
+
+  expect(snapshot.config.featureValues).toEqual({ ultracode: true });
+  expect(snapshot.config.thinkingOptionId).toBe("xhigh");
+  expect(client.createdConfigs[0]?.thinkingOptionId).toBe("xhigh");
+});
+
+test("createAgent rejects unknown feature values before creating a session", async () => {
+  const workdir = mkdtempSync(join(tmpdir(), "agent-manager-invalid-feature-"));
+
+  class CreateFeatureClient extends TestAgentClient {
+    async listFeatures(): Promise<AgentFeature[]> {
+      return [createFeature({ id: "ultracode", label: "Ultracode", value: false })];
+    }
+  }
+
+  const client = new CreateFeatureClient();
+  const manager = new AgentManager({
+    clients: { codex: client },
+    logger,
+    idFactory: () => "00000000-0000-4000-8000-000000000134",
+  });
+
+  await expect(
+    manager.createAgent({
+      provider: "codex",
+      cwd: workdir,
+      featureValues: { missing: true },
+    }),
+  ).rejects.toThrow(/Unknown feature 'missing'/);
+  expect(client.createdConfigs).toHaveLength(0);
+});
+
 test("setAgentModel reflects provider-cleared thinking option in runtime info", async () => {
   const workdir = mkdtempSync(join(tmpdir(), "agent-manager-model-thinking-"));
 
