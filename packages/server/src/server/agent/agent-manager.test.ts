@@ -2005,6 +2005,46 @@ test("setAgentFeature applies provider-returned thinking option changes", async 
   expect(agent?.runtimeInfo).toMatchObject({ thinkingOptionId: "xhigh" });
 });
 
+test("setAgentFeature applies provider-returned thinking option clears", async () => {
+  const workdir = mkdtempSync(join(tmpdir(), "agent-manager-feature-thinking-clear-"));
+
+  class FeatureThinkingSession extends TestAgentSession {
+    async setFeature(featureId: string, value: unknown) {
+      expect(featureId).toBe("ultracode");
+      expect(value).toBe(false);
+      return { thinkingOptionId: null, featureValues: { ultracode: false } };
+    }
+  }
+
+  class FeatureThinkingClient extends TestAgentClient {
+    override async createSession(config: AgentSessionConfig): Promise<AgentSession> {
+      return new FeatureThinkingSession(config);
+    }
+  }
+
+  const manager = new AgentManager({
+    clients: {
+      codex: new FeatureThinkingClient(),
+    },
+    logger,
+    idFactory: () => "00000000-0000-4000-8000-000000000135",
+  });
+
+  const snapshot = await manager.createAgent({
+    provider: "codex",
+    cwd: workdir,
+    thinkingOptionId: "xhigh",
+    featureValues: { ultracode: true },
+  });
+
+  await manager.setAgentFeature(snapshot.id, "ultracode", false);
+
+  const agent = manager.getAgent(snapshot.id);
+  expect(agent?.config.featureValues).toEqual({ ultracode: false });
+  expect(agent?.config.thinkingOptionId).toBeUndefined();
+  expect(agent?.runtimeInfo).toMatchObject({ thinkingOptionId: null });
+});
+
 test("setAgentThinkingOption applies provider-returned feature value changes", async () => {
   const workdir = mkdtempSync(join(tmpdir(), "agent-manager-thinking-features-"));
 

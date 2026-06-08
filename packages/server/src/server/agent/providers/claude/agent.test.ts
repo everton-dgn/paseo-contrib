@@ -753,6 +753,43 @@ describe("ClaudeAgentSession features", () => {
     await session.close();
   });
 
+  test("disabling Ultracode clears its implied xhigh thinking", async () => {
+    const { queryFactory, queryMock } = createQueryMock();
+    const client = new ClaudeAgentClient({
+      logger,
+      queryFactory,
+      resolveBinary: async () => "/test/claude/bin",
+    });
+    const session = await client.createSession({
+      provider: "claude",
+      cwd: process.cwd(),
+      model: "claude-opus-4-8",
+      thinkingOptionId: "xhigh",
+      featureValues: { ultracode: true },
+    });
+
+    await (
+      session as unknown as {
+        ensureQuery(): Promise<unknown>;
+      }
+    ).ensureQuery();
+    await expect(session.setFeature?.("ultracode", false)).resolves.toEqual({
+      thinkingOptionId: null,
+      featureValues: { ultracode: false },
+    });
+
+    expect(queryMock.applyFlagSettings).toHaveBeenLastCalledWith({ ultracode: false });
+    expect(
+      (
+        session as unknown as {
+          config: { thinkingOptionId?: string; featureValues?: Record<string, unknown> };
+        }
+      ).config.thinkingOptionId,
+    ).toBeUndefined();
+
+    await session.close();
+  });
+
   test("rejects non-boolean runtime feature values", async () => {
     const { queryFactory } = createQueryMock();
     const client = new ClaudeAgentClient({

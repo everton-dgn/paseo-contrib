@@ -2104,12 +2104,16 @@ class ClaudeAgentSession implements AgentSession {
     enabled: boolean,
     query?: Query,
   ): Promise<AgentConfigurationUpdateResult> {
+    const clearImpliedThinkingOption = !enabled && this.config.thinkingOptionId === "xhigh";
     this.config.featureValues = {
       ...this.config.featureValues,
       ultracode: enabled,
     };
     if (enabled) {
       this.config.thinkingOptionId = "xhigh";
+      this.queryRestartNeeded = true;
+    } else if (clearImpliedThinkingOption) {
+      this.config.thinkingOptionId = undefined;
       this.queryRestartNeeded = true;
     }
     const activeQuery = query ?? this.query;
@@ -2120,6 +2124,7 @@ class ClaudeAgentSession implements AgentSession {
     this.cachedRuntimeInfo = null;
     return {
       ...(enabled ? { thinkingOptionId: "xhigh" } : {}),
+      ...(!enabled && clearImpliedThinkingOption ? { thinkingOptionId: null } : {}),
       featureValues: this.config.featureValues,
     };
   }
