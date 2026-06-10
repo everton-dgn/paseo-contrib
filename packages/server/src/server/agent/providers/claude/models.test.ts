@@ -1,7 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import type { ModelInfo, Query, SDKMessage } from "@anthropic-ai/claude-agent-sdk";
+import type { ModelInfo, Query } from "@anthropic-ai/claude-agent-sdk";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createTestLogger } from "../../../../test-utils/test-logger.js";
@@ -24,24 +24,26 @@ afterEach(async () => {
   createdClaudeConfigDirs.length = 0;
 });
 
-interface TestQuery extends Query {
-  return: ReturnType<typeof vi.fn<() => Promise<IteratorResult<SDKMessage, void>>>>;
-}
+interface TestQuery extends Query {}
 
 interface TestQueryHandle {
   query: TestQuery;
-  supportedModels: ReturnType<typeof vi.fn<() => Promise<ModelInfo[]>>>;
-  returnQuery: ReturnType<typeof vi.fn<() => Promise<IteratorResult<SDKMessage, void>>>>;
+  supportedModelRequests: Query[];
+  returnedQueries: Query[];
 }
 
 function createTestQuery(supportedModels: () => Promise<ModelInfo[]>): TestQueryHandle {
-  const supportedModelsMock = vi.fn(supportedModels);
-  const returnQuery = vi.fn(async () => ({ done: true, value: undefined }) as const);
-  const query: TestQuery = {
+  const supportedModelRequests: Query[] = [];
+  const returnedQueries: Query[] = [];
+  let query: TestQuery;
+  query = {
     async next() {
       return { done: true, value: undefined };
     },
-    return: returnQuery,
+    async return() {
+      returnedQueries.push(query);
+      return { done: true, value: undefined } as const;
+    },
     async throw(error?: unknown) {
       throw error;
     },
@@ -57,7 +59,10 @@ function createTestQuery(supportedModels: () => Promise<ModelInfo[]>): TestQuery
       throw new Error("not implemented in test query");
     }),
     supportedCommands: vi.fn(async () => []),
-    supportedModels: supportedModelsMock,
+    async supportedModels() {
+      supportedModelRequests.push(query);
+      return await supportedModels();
+    },
     supportedAgents: vi.fn(async () => []),
     mcpServerStatus: vi.fn(async () => []),
     reconnectMcpServer: vi.fn(async () => undefined),
@@ -80,7 +85,7 @@ function createTestQuery(supportedModels: () => Promise<ModelInfo[]>): TestQuery
     accountInfo: vi.fn(async () => undefined),
   };
 
-  return { query, supportedModels: supportedModelsMock, returnQuery };
+  return { query, supportedModelRequests, returnedQueries };
 }
 
 function createQueryFactory(handle: TestQueryHandle): {
@@ -123,10 +128,17 @@ async function createClaudeConfigDirWithRawSettings(settings: string): Promise<s
   return configDir;
 }
 
+async function useEmptyClaudeConfigDir(): Promise<void> {
+  const configDir = await fs.mkdtemp(path.join(os.tmpdir(), "paseo-claude-models-"));
+  createdClaudeConfigDirs.push(configDir);
+  vi.stubEnv("CLAUDE_CONFIG_DIR", configDir);
+}
+
 describe("getClaudeModels", () => {
   it("returns all claude models", () => {
     const models = getClaudeModels();
     expect(models.map((m) => m.id)).toEqual([
+      "claude-fable-5",
       "claude-opus-4-8[1m]",
       "claude-opus-4-8",
       "claude-opus-4-7[1m]",
@@ -305,7 +317,7 @@ describe("decorateClaudeModelsWithSdkEfforts", () => {
         },
         {
           provider: "claude",
-          id: "openrouter/anthropic/claude-sonnet-4.4",
+          id: "openrouter/anthropic/claude-sonnet-4.6",
           label: "Configured Sonnet",
         },
       ],
@@ -383,7 +395,7 @@ describe("ClaudeAgentClient.listModels", () => {
       { id: "high", label: "High" },
       { id: "max", label: "Max" },
     ]);
-    expect(handle.returnQuery).toHaveBeenCalledTimes(1);
+    expect(handle.returnedQueries).toEqual([handle.query]);
   });
 
   it("does not decorate settings models below the documented Claude Code effort floor", async () => {
@@ -424,10 +436,11 @@ describe("ClaudeAgentClient.listModels", () => {
     expect(
       models.find((model) => model.id === "claude-haiku-4-5")?.thinkingOptions,
     ).toBeUndefined();
-    expect(handle.returnQuery).toHaveBeenCalledTimes(1);
+    expect(handle.returnedQueries).toEqual([handle.query]);
   });
 
   it("falls back to settings-aware static models when SDK discovery fails", async () => {
+    await useEmptyClaudeConfigDir();
     const handle = createTestQuery(async () => {
       throw new Error("SDK discovery failed");
     });
@@ -441,10 +454,11 @@ describe("ClaudeAgentClient.listModels", () => {
     const models = await client.listModels({ cwd: os.tmpdir(), force: true });
 
     expect(models).toEqual(getClaudeModels());
-    expect(handle.returnQuery).toHaveBeenCalledTimes(1);
+    expect(handle.returnedQueries).toEqual([handle.query]);
   });
 
   it("falls back to settings-aware static models when SDK discovery times out", async () => {
+    await useEmptyClaudeConfigDir();
     vi.useFakeTimers();
     const handle = createTestQuery(() => new Promise<ModelInfo[]>(() => undefined));
     const { queryFactory } = createQueryFactory(handle);
@@ -455,14 +469,15 @@ describe("ClaudeAgentClient.listModels", () => {
     });
 
     const modelsPromise = client.listModels({ cwd: os.tmpdir(), force: true });
-    await vi.waitFor(() => expect(handle.supportedModels).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(handle.supportedModelRequests).toEqual([handle.query]));
     await vi.advanceTimersByTimeAsync(15_000);
 
     await expect(modelsPromise).resolves.toEqual(getClaudeModels());
-    expect(handle.returnQuery).toHaveBeenCalledTimes(1);
+    expect(handle.returnedQueries).toEqual([handle.query]);
   });
 
   it("returns in-flight scratch queries during shutdown", async () => {
+    await useEmptyClaudeConfigDir();
     vi.useFakeTimers();
     const handle = createTestQuery(() => new Promise<ModelInfo[]>(() => undefined));
     const { queryFactory } = createQueryFactory(handle);
@@ -473,12 +488,12 @@ describe("ClaudeAgentClient.listModels", () => {
     });
 
     const modelsPromise = client.listModels({ cwd: os.tmpdir(), force: true });
-    await vi.waitFor(() => expect(handle.supportedModels).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(handle.supportedModelRequests).toEqual([handle.query]));
 
     await client.shutdown();
     await vi.advanceTimersByTimeAsync(15_000);
     await expect(modelsPromise).resolves.toEqual(getClaudeModels());
-    expect(handle.returnQuery).toHaveBeenCalledTimes(1);
+    expect(handle.returnedQueries).toEqual([handle.query]);
   });
 
   it("appends concrete models from Claude settings.json", async () => {
@@ -597,6 +612,7 @@ describe("ClaudeAgentClient.listModels", () => {
 
 describe("normalizeClaudeRuntimeModelId", () => {
   it("returns exact match for known model IDs", () => {
+    expect(normalizeClaudeRuntimeModelId("claude-fable-5")).toBe("claude-fable-5");
     expect(normalizeClaudeRuntimeModelId("claude-opus-4-6")).toBe("claude-opus-4-6");
     expect(normalizeClaudeRuntimeModelId("claude-opus-4-6[1m]")).toBe("claude-opus-4-6[1m]");
     expect(normalizeClaudeRuntimeModelId("claude-sonnet-4-6")).toBe("claude-sonnet-4-6");
@@ -604,6 +620,7 @@ describe("normalizeClaudeRuntimeModelId", () => {
   });
 
   it("normalizes dated model IDs to base model", () => {
+    expect(normalizeClaudeRuntimeModelId("claude-fable-5-20260301")).toBe("claude-fable-5");
     expect(normalizeClaudeRuntimeModelId("claude-opus-4-6-20260101")).toBe("claude-opus-4-6");
     expect(normalizeClaudeRuntimeModelId("claude-sonnet-4-6-20260101")).toBe("claude-sonnet-4-6");
     expect(normalizeClaudeRuntimeModelId("claude-haiku-4-5-20251001")).toBe("claude-haiku-4-5");
