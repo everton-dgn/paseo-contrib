@@ -209,7 +209,7 @@ export const es: TranslationResources = {
     },
   },
   sessions: {
-    title: "Sesiones",
+    title: "Historial de agentes",
     empty: "Aún no hay sesiones",
     actions: {
       loadMore: "Cargar más",
@@ -340,6 +340,9 @@ export const es: TranslationResources = {
     },
     hoverCard: {
       scriptsAccessibility: "GuionesWorkspace",
+      copyPath: "Copiar ruta",
+      copyBranchName: "Copiar nombre de rama",
+      copied: "Copiado",
     },
     fileExplorer: {
       sort: {
@@ -358,9 +361,12 @@ export const es: TranslationResources = {
         retry: "Rever",
         refresh: "Actualizar archivos",
         refreshing: "Actualizar archivos",
+        hideHiddenFiles: "Ocultar archivos ocultos",
+        showHiddenFiles: "Mostrar archivos ocultos",
       },
       empty: {
         noFiles: "Sin archivos",
+        noVisibleFiles: "No hay archivos visibles",
       },
       states: {
         unavailable: "Workspaceno está disponible",
@@ -468,6 +474,8 @@ export const es: TranslationResources = {
         splitDown: "Dividir panel hacia abajo",
         terminalProfilesMenu: "Terminal profiles",
         editTerminalProfiles: "Edit profiles…",
+        pinTarget: "Fijar",
+        unpinTarget: "Desfijar",
       },
       explorer: {
         open: "Explorador abierto",
@@ -769,12 +777,13 @@ export const es: TranslationResources = {
     },
     actions: {
       addProject: "Agregar proyecto",
+      newWorkspace: "Nuevo espacio de trabajo",
       home: "Hogar",
       settings: "Ajustes",
       closeSidebar: "Cerrar barra lateral",
     },
     sections: {
-      sessions: "Sesiones",
+      sessions: "Historial",
     },
     worktreeSetup: {
       title: "Configurar secuencias de comandos del árbol de trabajo",
@@ -850,6 +859,17 @@ export const es: TranslationResources = {
   newWorkspace: {
     title: "Nuevo espacio de trabajo",
     create: "Crear",
+    isolation: {
+      local: "Local",
+      worktree: "Nuevo worktree",
+      label: "Aislamiento",
+    },
+    fields: {
+      project: "Proyecto",
+      base: "Base",
+      baseNotApplicable: "No aplicable",
+    },
+    titlePlaceholder: "Título (opcional)",
     errors: {
       hostDisconnected: "Hostno está conectado",
       createWorktreeFailed: "No se pudo crear el árbol de trabajo",
@@ -1327,7 +1347,7 @@ export const es: TranslationResources = {
       creatingAgent: "Agente creador",
     },
     file: {
-      executionDirectoryMissing: "No se encontró el directorio de ejecución deWorkspace.",
+      directoryMissing: "No se encontró el directorio de Workspace.",
       loading: "Cargando archivo...",
       noPreview: "No hay vista previa disponible",
       binaryPreviewUnavailable: "Vista previa binaria no disponible",
@@ -1542,6 +1562,7 @@ export const es: TranslationResources = {
       },
       help: {
         openProject: "Abrir proyecto",
+        newWorkspace: "Nuevo espacio de trabajo",
         newWorktree: "Nuevo árbol de trabajo",
         archiveWorktree: "Árbol de trabajo de archivo",
         newTab: "Nueva pestaña",
@@ -1866,8 +1887,6 @@ export const es: TranslationResources = {
       metadata: {
         title: "Generación de metadatos",
         info: "Instrucciones específicas del proyecto inyectadas en los mensajes de IA quePaseoutiliza para generar metadatos; úselas para hacer cumplir las convenciones de su equipo, como la denominación de ramas, el estilo de confirmación o el formatoPR.",
-        agentTitle: "TítulosAgent",
-        agentTitlePlaceholder: "Mantenga los títulos imperativos y de menos de 40 caracteres",
         branchName: "Nombres de sucursales",
         branchNamePlaceholder: "Prefijo ramas con feat/ o fix/, mb/ para ramas personales",
         commitMessage: "Confirmar mensajes",

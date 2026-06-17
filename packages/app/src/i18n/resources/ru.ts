@@ -208,7 +208,7 @@ export const ru: TranslationResources = {
     },
   },
   sessions: {
-    title: "Сессии",
+    title: "История агентов",
     empty: "Сеансов пока нет",
     actions: {
       loadMore: "Загрузить больше",
@@ -339,6 +339,9 @@ export const ru: TranslationResources = {
     },
     hoverCard: {
       scriptsAccessibility: "Скрипты Workspace",
+      copyPath: "Копировать путь",
+      copyBranchName: "Копировать имя ветки",
+      copied: "Скопировано",
     },
     fileExplorer: {
       sort: {
@@ -357,9 +360,12 @@ export const ru: TranslationResources = {
         retry: "Повторить попытку",
         refresh: "Обновить файлы",
         refreshing: "Обновление файлов",
+        hideHiddenFiles: "Скрыть скрытые файлы",
+        showHiddenFiles: "Показать скрытые файлы",
       },
       empty: {
         noFiles: "Нет файлов",
+        noVisibleFiles: "Нет видимых файлов",
       },
       states: {
         unavailable: "Workspace недоступен",
@@ -467,6 +473,8 @@ export const ru: TranslationResources = {
         splitDown: "Разделить панель вниз",
         terminalProfilesMenu: "Terminal profiles",
         editTerminalProfiles: "Edit profiles…",
+        pinTarget: "Закрепить",
+        unpinTarget: "Открепить",
       },
       explorer: {
         open: "Открыть проводник",
@@ -761,12 +769,13 @@ export const ru: TranslationResources = {
     },
     actions: {
       addProject: "Добавить проект",
+      newWorkspace: "Новое рабочее пространство",
       home: "Дом",
       settings: "Настройки",
       closeSidebar: "Закрыть боковую панель",
     },
     sections: {
-      sessions: "Сессии",
+      sessions: "История",
     },
     worktreeSetup: {
       title: "Настройка сценариев рабочего дерева",
@@ -842,6 +851,17 @@ export const ru: TranslationResources = {
   newWorkspace: {
     title: "Новое рабочее пространство",
     create: "Создавать",
+    isolation: {
+      local: "Локально",
+      worktree: "Новый worktree",
+      label: "Изоляция",
+    },
+    fields: {
+      project: "Проект",
+      base: "База",
+      baseNotApplicable: "Неприменимо",
+    },
+    titlePlaceholder: "Название (необязательно)",
     errors: {
       hostDisconnected: "Host не подключен",
       createWorktreeFailed: "Не удалось создать рабочее дерево.",
@@ -1319,7 +1339,7 @@ export const ru: TranslationResources = {
       creatingAgent: "Создание агента",
     },
     file: {
-      executionDirectoryMissing: "Каталог выполнения Workspace не найден.",
+      directoryMissing: "Каталог Workspace не найден.",
       loading: "Загрузка файла...",
       noPreview: "Предварительный просмотр недоступен",
       binaryPreviewUnavailable: "Предварительный просмотр двоичного файла недоступен.",
@@ -1534,6 +1554,7 @@ export const ru: TranslationResources = {
       },
       help: {
         openProject: "Открыть проект",
+        newWorkspace: "Новое рабочее пространство",
         newWorktree: "Новое рабочее дерево",
         archiveWorktree: "Архив рабочего дерева",
         newTab: "Новая вкладка",
@@ -1858,8 +1879,6 @@ export const ru: TranslationResources = {
       metadata: {
         title: "Генерация метаданных",
         info: "Инструкции для конкретного проекта, внедренные в подсказки ИИ, которые Paseo использует для генерации метаданных. Используйте их для обеспечения соблюдения соглашений вашей команды, таких как наименование ветвей, стиль фиксации или формат PR.",
-        agentTitle: "Agent заголовки",
-        agentTitlePlaceholder: "Сохраняйте заголовки обязательными и длиной не более 40 символов.",
         branchName: "Названия ветвей",
         branchNamePlaceholder: "Префиксные ветки с feat/ или fix/, mb/ для личных веток",
         commitMessage: "Фиксировать сообщения",

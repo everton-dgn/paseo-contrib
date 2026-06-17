@@ -206,7 +206,7 @@ export const zhCN: TranslationResources = {
     },
   },
   sessions: {
-    title: "会话",
+    title: "Agent 历史",
     empty: "还没有会话",
     actions: {
       loadMore: "加载更多",
@@ -337,6 +337,9 @@ export const zhCN: TranslationResources = {
     },
     hoverCard: {
       scriptsAccessibility: "Workspace scripts",
+      copyPath: "复制路径",
+      copyBranchName: "复制分支名称",
+      copied: "已复制",
     },
     fileExplorer: {
       sort: {
@@ -355,9 +358,12 @@ export const zhCN: TranslationResources = {
         retry: "重试",
         refresh: "刷新文件",
         refreshing: "正在刷新文件",
+        hideHiddenFiles: "隐藏隐藏文件",
+        showHiddenFiles: "显示隐藏文件",
       },
       empty: {
         noFiles: "没有文件",
+        noVisibleFiles: "没有可见文件",
       },
       states: {
         unavailable: "Workspace 不可用",
@@ -464,6 +470,8 @@ export const zhCN: TranslationResources = {
         splitDown: "向下拆分窗格",
         terminalProfilesMenu: "Terminal profiles",
         editTerminalProfiles: "Edit profiles…",
+        pinTarget: "固定",
+        unpinTarget: "取消固定",
       },
       explorer: {
         open: "打开 explorer",
@@ -737,12 +745,13 @@ export const zhCN: TranslationResources = {
     },
     actions: {
       addProject: "添加 project",
+      newWorkspace: "新建工作区",
       home: "首页",
       settings: "设置",
       closeSidebar: "关闭侧边栏",
     },
     sections: {
-      sessions: "会话",
+      sessions: "历史",
     },
     worktreeSetup: {
       title: "设置 worktree scripts",
@@ -815,6 +824,17 @@ export const zhCN: TranslationResources = {
   newWorkspace: {
     title: "新建 workspace",
     create: "创建",
+    isolation: {
+      local: "本地",
+      worktree: "新建 worktree",
+      label: "隔离",
+    },
+    fields: {
+      project: "项目",
+      base: "基线",
+      baseNotApplicable: "不适用",
+    },
+    titlePlaceholder: "标题（可选）",
     errors: {
       hostDisconnected: "Host 未连接",
       createWorktreeFailed: "创建 worktree 失败",
@@ -1275,7 +1295,7 @@ export const zhCN: TranslationResources = {
       creatingAgent: "正在创建 Agent",
     },
     file: {
-      executionDirectoryMissing: "未找到 workspace 执行目录。",
+      directoryMissing: "未找到 workspace 目录。",
       loading: "正在加载文件...",
       noPreview: "没有可用预览",
       binaryPreviewUnavailable: "二进制预览不可用",
@@ -1486,6 +1506,7 @@ export const zhCN: TranslationResources = {
       },
       help: {
         openProject: "打开项目",
+        newWorkspace: "新建 workspace",
         newWorktree: "新建 worktree",
         archiveWorktree: "归档 worktree",
         newTab: "新建标签",
@@ -1802,8 +1823,6 @@ export const zhCN: TranslationResources = {
       metadata: {
         title: "元数据生成",
         info: "注入到 Paseo 用来生成元数据的 AI prompts 中的 Project 专属指令，可用于强制执行团队约定，例如分支命名、提交风格或 PR 格式",
-        agentTitle: "Agent 标题",
-        agentTitlePlaceholder: "标题保持祈使句且不超过 40 个字符",
         branchName: "分支名称",
         branchNamePlaceholder: "分支以 feat/ 或 fix/ 开头，个人分支使用 mb/",
         commitMessage: "提交消息",

@@ -206,7 +206,7 @@ export const ar: TranslationResources = {
     },
   },
   sessions: {
-    title: "الجلسات",
+    title: "سجل الوكلاء",
     empty: "لا توجد جلسات بعد",
     actions: {
       loadMore: "تحميل المزيد",
@@ -337,6 +337,9 @@ export const ar: TranslationResources = {
     },
     hoverCard: {
       scriptsAccessibility: "البرامج النصية Workspace",
+      copyPath: "نسخ المسار",
+      copyBranchName: "نسخ اسم الفرع",
+      copied: "تم النسخ",
     },
     fileExplorer: {
       sort: {
@@ -355,9 +358,12 @@ export const ar: TranslationResources = {
         retry: "أعد المحاولة",
         refresh: "تحديث الملفات",
         refreshing: "تحديث الملفات",
+        hideHiddenFiles: "إخفاء الملفات المخفية",
+        showHiddenFiles: "إظهار الملفات المخفية",
       },
       empty: {
         noFiles: "لا توجد ملفات",
+        noVisibleFiles: "لا توجد ملفات مرئية",
       },
       states: {
         unavailable: "Workspace غير متوفر",
@@ -464,6 +470,8 @@ export const ar: TranslationResources = {
         splitDown: "تقسيم الجزء لأسفل",
         terminalProfilesMenu: "Terminal profiles",
         editTerminalProfiles: "Edit profiles…",
+        pinTarget: "تثبيت",
+        unpinTarget: "إلغاء التثبيت",
       },
       explorer: {
         open: "افتح المستكشف",
@@ -743,12 +751,13 @@ export const ar: TranslationResources = {
     },
     actions: {
       addProject: "إضافة مشروع",
+      newWorkspace: "مساحة عمل جديدة",
       home: "بيت",
       settings: "إعدادات",
       closeSidebar: "إغلاق الشريط الجانبي",
     },
     sections: {
-      sessions: "الجلسات",
+      sessions: "السجل",
     },
     worktreeSetup: {
       title: "إعداد البرامج النصية لشجرة العمل",
@@ -824,6 +833,17 @@ export const ar: TranslationResources = {
   newWorkspace: {
     title: "مساحة عمل جديدة",
     create: "يخلق",
+    isolation: {
+      local: "محلي",
+      worktree: "شجرة عمل جديدة",
+      label: "العزل",
+    },
+    fields: {
+      project: "المشروع",
+      base: "الأساس",
+      baseNotApplicable: "غير قابل للتطبيق",
+    },
+    titlePlaceholder: "العنوان (اختياري)",
     errors: {
       hostDisconnected: "Host غير متصل",
       createWorktreeFailed: "فشل في إنشاء شجرة العمل",
@@ -1292,7 +1312,7 @@ export const ar: TranslationResources = {
       creatingAgent: "وكيل الخلق",
     },
     file: {
-      executionDirectoryMissing: "لم يتم العثور على دليل تنفيذ Workspace.",
+      directoryMissing: "لم يتم العثور على دليل Workspace.",
       loading: "جارٍ تحميل الملف...",
       noPreview: "لا تتوفر معاينة",
       binaryPreviewUnavailable: "المعاينة الثنائية غير متاحة",
@@ -1505,6 +1525,7 @@ export const ar: TranslationResources = {
       },
       help: {
         openProject: "مشروع مفتوح",
+        newWorkspace: "مساحة عمل جديدة",
         newWorktree: "شجرة عمل جديدة",
         archiveWorktree: "أرشفة شجرة العمل",
         newTab: "علامة تبويب جديدة",
@@ -1825,8 +1846,6 @@ export const ar: TranslationResources = {
       metadata: {
         title: "توليد البيانات الوصفية",
         info: "تعليمات خاصة بالمشروع يتم إدخالها في الذكاء الاصطناعي الذي يستخدمه Paseo لإنشاء بيانات التعريف - استخدمها لفرض اصطلاحات فريقك مثل تسمية الفرع أو نمط الالتزام أو تنسيق PR",
-        agentTitle: "عناوين Agent",
-        agentTitlePlaceholder: "اجعل العناوين ضرورية وأقل من 40 حرفًا",
         branchName: "اسماء الفروع",
         branchNamePlaceholder: "بادئة الفروع بـ fet/ أو Fix/, mb/ للفروع الشخصية",
         commitMessage: "ارتكاب الرسائل",

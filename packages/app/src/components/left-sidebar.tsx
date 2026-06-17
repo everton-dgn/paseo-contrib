@@ -1,5 +1,5 @@
 import { router, usePathname } from "expo-router";
-import { FolderPlus, Home, MessagesSquare, Plus, Search, Settings, X } from "lucide-react-native";
+import { Clock, FolderPlus, Home, Plus, Search, Settings, X } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import {
   type Dispatch,
@@ -69,6 +69,7 @@ import {
   buildSettingsRoute,
   mapPathnameToServer,
 } from "@/utils/host-routes";
+import type { ShortcutKey } from "@/utils/format-shortcut";
 import { SidebarAgentListSkeleton } from "./sidebar-agent-list-skeleton";
 import { SidebarCalloutSlot } from "./sidebar-callout-slot";
 import { SidebarWorkspaceList } from "./sidebar-workspace-list";
@@ -112,10 +113,12 @@ interface SidebarSharedProps {
     active: boolean;
     onPress: () => void;
   }) => ReactElement;
+  newWorkspaceKeys: ShortcutKey[][] | null;
 }
 
 interface SidebarLabels {
   addProject: string;
+  newWorkspace: string;
   home: string;
   settings: string;
   switchHost: string;
@@ -242,7 +245,7 @@ export const LeftSidebar = memo(function LeftSidebar({
 
   const handleNewWorkspaceNavigate = useCallback(() => {
     if (!activeServerId) return;
-    router.push(buildHostNewWorkspaceRoute(activeServerId));
+    router.navigate(buildHostNewWorkspaceRoute(activeServerId));
   }, [activeServerId]);
 
   const handleSettingsMobile = useCallback(() => {
@@ -284,9 +287,12 @@ export const LeftSidebar = memo(function LeftSidebar({
     [pathname],
   );
 
+  const newWorkspaceKeys = useShortcutKeys("new-workspace");
+
   const labels = useMemo(
     (): SidebarLabels => ({
       addProject: t("sidebar.actions.addProject"),
+      newWorkspace: t("sidebar.actions.newWorkspace"),
       home: t("sidebar.actions.home"),
       settings: t("sidebar.actions.settings"),
       switchHost: t("sidebar.host.switchTitle"),
@@ -318,6 +324,7 @@ export const LeftSidebar = memo(function LeftSidebar({
     handleHostSelect,
     renderHostOption,
     labels,
+    newWorkspaceKeys,
   };
 
   if (isCompactLayout) {
@@ -596,6 +603,7 @@ function MobileSidebar({
   handleRefresh,
   handleHostSelect,
   renderHostOption,
+  newWorkspaceKeys,
   handleNewWorkspaceNavigate,
   handleOpenProject,
   handleHome,
@@ -800,19 +808,25 @@ function MobileSidebar({
       <GestureDetector gesture={closeGesture} touchAction="pan-y">
         <Animated.View style={mobileSidebarStyle} pointerEvents="auto">
           <View style={styles.sidebarContent} pointerEvents="auto">
-            <View style={styles.sidebarHeaderRow}>
+            <View style={styles.sidebarHeaderGroup}>
               <SidebarHeaderRow
-                icon={MessagesSquare}
+                icon={Plus}
+                label={labels.newWorkspace}
+                onPress={handleNewWorkspace}
+                testID="sidebar-global-new-workspace"
+                variant="compact"
+                shortcutKeys={newWorkspaceKeys}
+              />
+              <SidebarHeaderRow
+                icon={Clock}
                 label={labels.sessions}
                 onPress={handleViewMore}
                 isActive={isSessionsActive}
                 testID="sidebar-sessions"
+                variant="compact"
               />
             </View>
-            <WorkspacesSectionHeader
-              serverId={activeServerId}
-              onNewWorkspacePress={handleNewWorkspace}
-            />
+            <WorkspacesSectionHeader serverId={activeServerId} />
             <Pressable
               style={styles.mobileCloseButton}
               onPress={closeSidebar}
@@ -894,6 +908,7 @@ function DesktopSidebar({
   handleRefresh,
   handleHostSelect,
   renderHostOption,
+  newWorkspaceKeys,
   handleNewWorkspaceNavigate,
   handleOpenProject,
   handleHome,
@@ -973,20 +988,26 @@ function DesktopSidebar({
         <View style={styles.sidebarDragArea}>
           <TitlebarDragRegion />
           {padding.top > 0 ? <View style={paddingTopSpacerStyle} /> : null}
-          <View style={styles.sidebarHeaderRow}>
+          <View style={styles.sidebarHeaderGroup}>
             <SidebarHeaderRow
-              icon={MessagesSquare}
+              icon={Plus}
+              label={labels.newWorkspace}
+              onPress={handleNewWorkspaceNavigate}
+              testID="sidebar-global-new-workspace"
+              variant="compact"
+              shortcutKeys={newWorkspaceKeys}
+            />
+            <SidebarHeaderRow
+              icon={Clock}
               label={labels.sessions}
               onPress={handleViewMore}
               isActive={isSessionsActive}
               testID="sidebar-sessions"
+              variant="compact"
             />
           </View>
         </View>
-        <WorkspacesSectionHeader
-          serverId={activeServerId}
-          onNewWorkspacePress={handleNewWorkspaceNavigate}
-        />
+        <WorkspacesSectionHeader serverId={activeServerId} />
 
         {isInitialLoad ? (
           <SidebarAgentListSkeleton />
@@ -1032,13 +1053,7 @@ function DesktopSidebar({
   );
 }
 
-function WorkspacesSectionHeader({
-  serverId,
-  onNewWorkspacePress,
-}: {
-  serverId: string | null;
-  onNewWorkspacePress: () => void;
-}) {
+function WorkspacesSectionHeader({ serverId }: { serverId: string | null }) {
   const { theme } = useUnistyles();
   const setCommandCenterOpen = useKeyboardShortcutsStore((state) => state.setCommandCenterOpen);
   const commandCenterKeys = useShortcutKeys("toggle-command-center");
@@ -1055,29 +1070,6 @@ function WorkspacesSectionHeader({
     <View style={styles.workspacesSectionHeader}>
       <Text style={styles.workspacesSectionTitle}>Workspaces</Text>
       <View style={styles.workspacesSectionActions}>
-        <Tooltip delayDuration={300}>
-          <TooltipTrigger asChild>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="New workspace"
-              testID="sidebar-new-workspace"
-              style={searchButtonStyle}
-              onPress={onNewWorkspacePress}
-            >
-              {({ hovered, pressed }) => (
-                <Plus
-                  size={14}
-                  color={
-                    hovered || pressed ? theme.colors.foreground : theme.colors.foregroundMuted
-                  }
-                />
-              )}
-            </Pressable>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" align="center" offset={8}>
-            <HeaderIconTooltipContent label="New workspace" />
-          </TooltipContent>
-        </Tooltip>
         <Tooltip delayDuration={300}>
           <TooltipTrigger asChild>
             <Pressable
@@ -1137,8 +1129,13 @@ const staticStyles = RNStyleSheet.create({
 });
 
 const styles = StyleSheet.create((theme) => ({
-  sidebarHeaderRow: {
-    position: "relative",
+  sidebarHeaderGroup: {
+    paddingTop: theme.spacing[2],
+    // Match WorkspacesSectionHeader's paddingTop below the divider so the divider
+    // sits visually centered between the Sessions row and the Workspaces header.
+    paddingBottom: theme.spacing[2],
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
   workspacesSectionHeader: {
     flexDirection: "row",
@@ -1152,7 +1149,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   workspacesSectionTitle: {
     color: theme.colors.foregroundMuted,
-    fontSize: theme.fontSize.sm,
+    fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.normal,
   },
   workspacesSectionActions: {

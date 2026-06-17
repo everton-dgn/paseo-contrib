@@ -7,10 +7,9 @@ import {
   selectHasWorkspaces,
   selectProjectOrder,
   selectRecommendedProjectPaths,
-  selectResolveWorkspaceIdByCwd,
   selectWorkspace,
+  selectWorkspaceDirectory,
   selectWorkspaceExists,
-  selectWorkspaceExecutionAuthority,
   selectWorkspaceFields,
   selectWorkspaceKeys,
   selectWorkspaceOrderByScopeForServer,
@@ -20,7 +19,6 @@ import {
   type WorkspaceStructure,
 } from "./selectors";
 import { useSessionStore, type WorkspaceDescriptor } from "../session-store";
-import type { WorkspaceExecutionAuthorityResult } from "@/utils/workspace-execution";
 import type { DesktopBadgeWorkspaceStatus } from "@/utils/desktop-badge-state";
 
 // These are the ONLY supported ways to read workspaces from the session store.
@@ -72,14 +70,14 @@ export function useHasHydratedWorkspaces(serverId: string | null): boolean {
   );
 }
 
-export function useWorkspaceExecutionAuthority(
+export function useWorkspaceDirectory(
   serverId: string | null,
   workspaceId: string | null,
-): WorkspaceExecutionAuthorityResult | null {
+): string | null {
   return useStoreWithEqualityFn(
     useSessionStore,
-    (state) => selectWorkspaceExecutionAuthority(state, serverId, workspaceId),
-    workspaceEqualityFns.deep,
+    (state) => selectWorkspaceDirectory(state, serverId, workspaceId),
+    workspaceEqualityFns.identity,
   );
 }
 
@@ -132,17 +130,6 @@ export function useHasWorkspaces(serverId: string | null): boolean {
   return useStoreWithEqualityFn(
     useSessionStore,
     (state) => selectHasWorkspaces(state, serverId),
-    workspaceEqualityFns.identity,
-  );
-}
-
-export function useResolveWorkspaceIdByCwd(
-  serverId: string | null,
-  cwd: string | null | undefined,
-): string | null {
-  return useStoreWithEqualityFn(
-    useSessionStore,
-    (state) => selectResolveWorkspaceIdByCwd(state, serverId, cwd),
     workspaceEqualityFns.identity,
   );
 }
