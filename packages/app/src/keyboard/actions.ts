@@ -8,7 +8,6 @@ export type KeyboardFocusScope =
 export type MessageInputKeyboardActionKind =
   | "focus"
   | "send"
-  | "queue"
   | "dictation-toggle"
   | "dictation-cancel"
   | "dictation-confirm"
@@ -42,6 +41,7 @@ export type KeyboardActionId =
   | "command-center.toggle"
   | "shortcuts.dialog.toggle"
   | "workspace.terminal.new"
+  | "workspace.new"
   | "worktree.new"
   | "worktree.archive"
   | "view.toggle.focus"

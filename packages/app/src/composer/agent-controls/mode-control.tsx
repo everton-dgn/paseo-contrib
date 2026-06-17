@@ -7,18 +7,13 @@ import {
   type ComponentType,
   type ReactElement,
 } from "react";
-import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
+import { useTranslation } from "react-i18next";
+import { Text, View, type PressableStateCallbackType } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useShallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
-import {
-  Bot,
-  ChevronDown,
-  ShieldAlert,
-  ShieldCheck,
-  ShieldOff,
-  ShieldQuestionMark,
-} from "lucide-react-native";
+import { Bot, ShieldAlert, ShieldCheck, ShieldOff, ShieldQuestionMark } from "lucide-react-native";
+import { ComboboxTrigger } from "@/components/ui/combobox-trigger";
 import { type SheetHeader } from "@/components/adaptive-modal-sheet";
 import { Combobox, ComboboxItem, type ComboboxOption } from "@/components/ui/combobox";
 import { useSessionStore } from "@/stores/session-store";
@@ -108,6 +103,7 @@ function AgentModeControlView({
   disabled = false,
 }: AgentModeControlViewProps) {
   const { theme } = useUnistyles();
+  const { t } = useTranslation();
   const anchorRef = useRef<View>(null);
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -182,34 +178,35 @@ function AgentModeControlView({
 
   const sheetHeader = useMemo<SheetHeader>(
     () => ({
-      title: "Mode",
+      title: t("agentControls.mode.title"),
       search: {
         onChange: setSearchQuery,
-        placeholder: "Search modes...",
+        placeholder: t("agentControls.mode.searchPlaceholder"),
         testID: "mode-search-input",
       },
     }),
-    [],
+    [t],
   );
 
   if (!selectedMode) return null;
 
   return (
     <>
-      <Pressable
+      <ComboboxTrigger
         ref={anchorRef}
         collapsable={false}
         disabled={disabled}
         onPress={handlePress}
         style={pressableStyle}
         accessibilityRole="button"
-        accessibilityLabel={`Select agent mode (${selectedModeLabel})`}
+        accessibilityLabel={t("agentControls.mode.selectWithValue", {
+          value: selectedModeLabel,
+        })}
         testID="mode-control"
       >
         {Icon ? <Icon size={theme.iconSize.md} color={iconColor} /> : null}
         <Text style={labelStyle}>{selectedModeLabel}</Text>
-        <ChevronDown size={theme.iconSize.sm} color={iconColor} />
-      </Pressable>
+      </ComboboxTrigger>
       <Combobox
         options={options}
         value={selectedMode.id}

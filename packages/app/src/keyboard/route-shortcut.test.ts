@@ -29,6 +29,7 @@ describe("routeKeyboardShortcut — dispatch passthroughs", () => {
   it.each([
     ["agent.interrupt", { id: "agent.interrupt", scope: "global" }],
     ["workspace.tab.new", { id: "workspace.tab.new", scope: "workspace" }],
+    ["workspace.new", { id: "workspace.new", scope: "sidebar" }],
     ["worktree.archive", { id: "worktree.archive", scope: "sidebar" }],
     ["worktree.new", { id: "worktree.new", scope: "sidebar" }],
     ["workspace.terminal.new", { id: "workspace.terminal.new", scope: "workspace" }],
@@ -282,15 +283,6 @@ describe("routeKeyboardShortcut — message-input.action", () => {
       kind: "dispatch",
       action: { id, scope: "message-input" },
     });
-  });
-
-  it("returns none for unsupported message-input kinds (queue)", () => {
-    expect(
-      routeKeyboardShortcut(
-        { action: "message-input.action", payload: { kind: "queue" } },
-        makeCtx(),
-      ),
-    ).toEqual<ShortcutAction>({ kind: "none" });
   });
 
   it("returns none when kind is missing", () => {

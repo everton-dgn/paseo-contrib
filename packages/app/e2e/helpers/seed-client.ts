@@ -1,5 +1,6 @@
 import path from "node:path";
 import { readFileSync } from "node:fs";
+import type { TerminalActivity } from "@getpaseo/protocol/terminal-activity";
 import { connectDaemonClient } from "./daemon-client-loader";
 import { createTempDirectory, createTempGitRepo } from "./workspace";
 
@@ -23,16 +24,58 @@ export interface SeedDaemonClient {
     } | null;
     error: string | null;
   }>;
+  createWorkspace(input: {
+    source:
+      | { kind: "directory"; path: string; projectId?: string }
+      | {
+          kind: "worktree";
+          cwd?: string;
+          projectId?: string;
+          action?: "branch-off" | "checkout";
+          refName?: string;
+          baseBranch?: string;
+          githubPrNumber?: number;
+          worktreeSlug?: string;
+        };
+    title?: string;
+  }): Promise<{
+    workspace: { id: string; name: string } | null;
+    error: string | null;
+  }>;
+  /**
+   * Force the daemon to recompute its git snapshot and diff for a checkout,
+   * mirroring the UI's manual refresh. Tests use this to make an out-of-band
+   * working-tree write authoritative before asserting on it in the UI, instead
+   * of racing the filesystem watcher's debounce.
+   */
+  checkoutRefresh(cwd: string): Promise<{ success: boolean; error: unknown }>;
   createTerminal(
     cwd: string,
     name?: string,
+    requestId?: string,
+    options?: { agentId?: string; command?: string; args?: string[]; workspaceId?: string },
   ): Promise<{
-    terminal: { id: string; name: string; cwd: string } | null;
+    terminal: { id: string; name: string; cwd: string; activity?: TerminalActivity | null } | null;
     error: string | null;
+  }>;
+  listTerminals(
+    cwd?: string,
+    requestId?: string,
+    options?: { workspaceId?: string },
+  ): Promise<{
+    terminals: Array<{
+      id: string;
+      name: string;
+      cwd: string;
+      title?: string;
+      activity?: TerminalActivity | null;
+    }>;
+    error?: string | null;
   }>;
   createAgent(options: {
     provider: string;
     cwd: string;
+    workspaceId?: string;
     title?: string;
     modeId?: string;
     model?: string;
@@ -41,7 +84,18 @@ export interface SeedDaemonClient {
     initialPrompt?: string;
   }): Promise<{ id: string; status: string }>;
   fetchAgents(options?: { scope?: "active" }): Promise<{
-    entries: Array<{ agent: { id: string; cwd: string; title?: string | null } }>;
+    entries: Array<{
+      agent: {
+        id: string;
+        provider: string;
+        cwd: string;
+        workspaceId?: string;
+        model: string | null;
+        currentModeId: string | null;
+        status: string;
+        title?: string | null;
+      };
+    }>;
   }>;
   fetchRecentProviderSessions(options: {
     cwd: string;

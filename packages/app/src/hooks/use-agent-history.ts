@@ -5,6 +5,7 @@ import type {
 } from "@getpaseo/client/internal/daemon-client";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import type { AggregatedAgent } from "@/hooks/use-aggregated-agents";
 import { useHostRuntimeClient, useHostRuntimeIsConnected, useHosts } from "@/runtime/host-runtime";
 import { buildAgentDirectoryState } from "@/utils/agent-directory-sync";
@@ -59,6 +60,7 @@ export async function fetchAgentHistoryPage(input: {
       status: agent.status,
       lastActivityAt: agent.lastActivityAt,
       cwd: agent.cwd,
+      workspaceId: agent.workspaceId,
       provider: agent.provider,
       pendingPermissionCount: agent.pendingPermissions.length,
       requiresAttention: agent.requiresAttention,
@@ -76,6 +78,7 @@ export function useAgentHistory(options: {
   serverId?: string | null;
   enabled?: boolean;
 }): AgentHistoryResult {
+  const { t } = useTranslation();
   const daemons = useHosts();
   const serverId = useMemo(() => {
     const value = options.serverId;
@@ -102,7 +105,7 @@ export function useAgentHistory(options: {
       lastPage.pageInfo.hasMore ? lastPage.pageInfo.nextCursor : null,
     queryFn: async ({ pageParam }) => {
       if (!serverId || !client) {
-        throw new Error("Host is not connected");
+        throw new Error(t("workspace.terminal.hostDisconnected"));
       }
       return fetchAgentHistoryPage({ client, serverId, cursor: pageParam });
     },

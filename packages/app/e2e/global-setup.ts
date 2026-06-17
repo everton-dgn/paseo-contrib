@@ -23,7 +23,7 @@ async function getAvailablePort(): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
     server.once("error", reject);
-    server.listen(0, () => {
+    server.listen(0, "127.0.0.1", () => {
       const address = server.address();
       if (!address || typeof address === "string") {
         server.close(() => reject(new Error("Failed to acquire port")));
@@ -33,6 +33,14 @@ async function getAvailablePort(): Promise<number> {
     });
   });
 }
+
+const RESERVED_LOCAL_PORTS = new Set([
+  // Default developer daemon.
+  6767,
+  // OpenCode's default local server port. Some provider probes can spawn it
+  // during daemon startup, so the E2E daemon must not choose the same port.
+  61680,
+]);
 
 function createLineBuffer(maxLines = 120): { add: (line: string) => void; dump: () => string } {
   const lines: string[] = [];
@@ -486,7 +494,7 @@ async function awaitRelayReady(
 async function getAvailablePortExcluding(excludedPorts: Set<number>): Promise<number> {
   for (;;) {
     const port = await getAvailablePort();
-    if (!excludedPorts.has(port)) {
+    if (!excludedPorts.has(port) && !RESERVED_LOCAL_PORTS.has(port)) {
       return port;
     }
   }
@@ -533,13 +541,23 @@ async function startRelay(excludedPorts: Set<number>): Promise<number> {
   );
 }
 
-function startMetro(metroPort: number, buffer: ReturnType<typeof createLineBuffer>): ChildProcess {
+function startMetro(input: {
+  metroPort: number;
+  daemonPort: number;
+  buffer: ReturnType<typeof createLineBuffer>;
+}): ChildProcess {
   const appDir = path.resolve(__dirname, "..");
-  const child = spawn("npx", ["expo", "start", "--web", "--port", String(metroPort)], {
+  const child = spawn("npx", ["expo", "start", "--web", "--port", String(input.metroPort)], {
     cwd: appDir,
     env: {
       ...process.env,
       BROWSER: "none",
+      ...(process.env.E2E_DESKTOP_RUNTIME === "1"
+        ? {
+            PASEO_WEB_PLATFORM: "electron",
+            EXPO_PUBLIC_LOCAL_DAEMON: `127.0.0.1:${input.daemonPort}`,
+          }
+        : {}),
     },
     stdio: ["ignore", "pipe", "pipe"],
     detached: false,
@@ -551,7 +569,7 @@ function startMetro(metroPort: number, buffer: ReturnType<typeof createLineBuffe
       .split("\n")
       .filter((line) => line.trim());
     for (const line of lines) {
-      buffer.add(`[stdout] ${line}`);
+      input.buffer.add(`[stdout] ${line}`);
       console.log(`[metro] ${line}`);
     }
   });
@@ -562,7 +580,7 @@ function startMetro(metroPort: number, buffer: ReturnType<typeof createLineBuffe
       .split("\n")
       .filter((line) => line.trim());
     for (const line of lines) {
-      buffer.add(`[stderr] ${line}`);
+      input.buffer.add(`[stderr] ${line}`);
       console.error(`[metro] ${line}`);
     }
   });
@@ -667,8 +685,8 @@ export default async function globalSetup() {
   ensureRelayBuildArtifact(repoRoot);
   await loadEnvTestFile(repoRoot);
 
-  const port = await getAvailablePort();
-  const metroPort = await getAvailablePort();
+  const port = await getAvailablePortExcluding(new Set());
+  const metroPort = await getAvailablePortExcluding(new Set([port]));
   const requestedPaseoHome = resolveOptionalPaseoHomeEnv(process.env.E2E_PASEO_HOME);
   const shouldRemovePaseoHome = !requestedPaseoHome && process.env.E2E_KEEP_PASEO_HOME !== "1";
   paseoHome = requestedPaseoHome ?? (await mkdtemp(path.join(tmpdir(), "paseo-e2e-home-")));
@@ -685,7 +703,11 @@ export default async function globalSetup() {
 
   try {
     const relayPort = await startRelay(new Set([port, metroPort]));
-    metroProcess = startMetro(metroPort, metroLineBuffer);
+    metroProcess = startMetro({
+      metroPort,
+      daemonPort: port,
+      buffer: metroLineBuffer,
+    });
     daemonProcess = startDaemon({
       port,
       relayPort,

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Keyboard, ScrollView, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import ReanimatedAnimated from "react-native-reanimated";
 import { StyleSheet } from "react-native-unistyles";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,7 +23,7 @@ import { buildDraftStoreKey } from "@/stores/draft-keys";
 import { usePanelStore } from "@/stores/panel-store";
 import { useCreateFlowStore } from "@/stores/create-flow-store";
 import type { Agent } from "@/stores/session-store";
-import { useWorkspaceExecutionAuthority } from "@/stores/session-store-hooks";
+import { useWorkspaceFields } from "@/stores/session-store-hooks";
 import { useWorkspaceDraftSubmissionStore } from "@/stores/workspace-draft-submission-store";
 import { encodeImages } from "@/utils/encode-images";
 import type { WorkspaceFileOpenRequest } from "@/workspace/file-open";
@@ -120,7 +121,7 @@ async function submitDraftCreateRequest(input: {
   attachments?: unknown;
   client: DaemonClient | null;
   workspaceDirectory: string | null;
-  workspaceExecutionAuthority: { workspaceId: string } | null;
+  workspaceId: string | null;
   autoSubmitConfig: AutoSubmitConfig | null;
   composerState: {
     selectedProvider: string | null;
@@ -130,6 +131,8 @@ async function submitDraftCreateRequest(input: {
     effectiveThinkingOptionId: string | null;
     featureValues: Record<string, unknown> | undefined;
   };
+  hostDisconnectedMessage: string;
+  selectModelMessage: string;
 }): Promise<{ agentId: string | null; result: AgentSnapshotPayload }> {
   const {
     attempt,
@@ -138,20 +141,20 @@ async function submitDraftCreateRequest(input: {
     attachments,
     client,
     workspaceDirectory,
-    workspaceExecutionAuthority,
+    workspaceId,
     autoSubmitConfig,
     composerState,
   } = input;
 
   invariant(workspaceDirectory, "Workspace directory is required");
-  invariant(workspaceExecutionAuthority, "Workspace authority is required");
+  invariant(workspaceId, "Workspace id is required");
   if (!client) {
-    throw new Error("Host is not connected");
+    throw new Error(input.hostDisconnectedMessage);
   }
 
   const provider = autoSubmitConfig?.provider ?? composerState.selectedProvider;
   if (!provider) {
-    throw new Error("Select a model");
+    throw new Error(input.selectModelMessage);
   }
   const modeIdOverride = resolveDraftModeIdOverride({
     autoSubmitConfig,
@@ -172,7 +175,7 @@ async function submitDraftCreateRequest(input: {
   const attachmentsArray = Array.isArray(attachments) ? attachments : undefined;
   const result = await client.createAgent({
     config,
-    workspaceId: workspaceExecutionAuthority.workspaceId,
+    workspaceId,
     ...(text ? { initialPrompt: text } : {}),
     clientMessageId: attempt.clientMessageId,
     ...(imagesData && imagesData.length > 0 ? { images: imagesData } : {}),
@@ -199,6 +202,7 @@ function buildDraftAgentSnapshot(input: {
     selectedProvider: string | null;
     agentControls: { features?: Agent["features"] };
   };
+  selectModelMessage: string;
 }): Agent {
   const { attempt, serverId, tabId, workspaceDirectory, autoSubmitConfig, composerState } = input;
   invariant(workspaceDirectory, "Workspace directory is required");
@@ -213,7 +217,7 @@ function buildDraftAgentSnapshot(input: {
   });
   const provider = autoSubmitConfig?.provider ?? composerState.selectedProvider;
   if (!provider) {
-    throw new Error("Select a model");
+    throw new Error(input.selectModelMessage);
   }
   return {
     serverId,
@@ -309,12 +313,15 @@ export function WorkspaceDraftAgentTab({
   onOpenWorkspaceFile,
   onOpenImportSheet,
 }: WorkspaceDraftAgentTabProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const client = useHostRuntimeClient(serverId);
   const isConnected = useHostRuntimeIsConnected(serverId);
-  const workspaceAuthority = useWorkspaceExecutionAuthority(serverId, workspaceId);
-  const workspaceExecutionAuthority = workspaceAuthority?.ok ? workspaceAuthority.authority : null;
-  const workspaceDirectory = workspaceExecutionAuthority?.workspaceDirectory ?? null;
+  const workspaceFields = useWorkspaceFields(serverId, workspaceId, (w) => ({
+    workspaceDirectory: w.workspaceDirectory,
+    id: w.id,
+  }));
+  const workspaceDirectory = workspaceFields?.workspaceDirectory || null;
   const draftSetup = initialSetup ?? null;
   const draftWorkingDirectory = resolveDraftWorkingDirectory({
     workspaceDirectory,
@@ -456,6 +463,7 @@ export function WorkspaceDraftAgentTab({
         workspaceDirectory: draftWorkingDirectory,
         autoSubmitConfig,
         composerState,
+        selectModelMessage: t("workspaceSetup.errors.selectModel"),
       }),
     createRequest: async ({ attempt, text, images, attachments }) =>
       submitDraftCreateRequest({
@@ -465,9 +473,11 @@ export function WorkspaceDraftAgentTab({
         attachments,
         client,
         workspaceDirectory: draftWorkingDirectory,
-        workspaceExecutionAuthority,
+        workspaceId: workspaceFields?.id ?? null,
         autoSubmitConfig,
         composerState,
+        hostDisconnectedMessage: t("workspace.terminal.hostDisconnected"),
+        selectModelMessage: t("workspaceSetup.errors.selectModel"),
       }),
     onCreateSuccess: ({ result }) => {
       clearDraftInput("sent");

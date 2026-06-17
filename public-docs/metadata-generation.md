@@ -1,17 +1,17 @@
 ---
 title: Metadata generation
-description: How Paseo uses providers to generate agent titles, branch names, commit messages, and pull request text, and how to configure them.
+description: How Paseo uses providers to generate branch names, commit messages, and pull request text, and how to configure them.
 nav: Metadata generation
-order: 15
+order: 42
+category: Configuration
 ---
 
 # Metadata generation
 
 Paseo asks a language model to write short pieces of text for you so you don't have to. This is separate from the agent you're talking to: it's a small, one-shot call made in the background.
 
-Paseo generates four kinds of metadata:
+Paseo generates three kinds of metadata:
 
-- **Agent titles** — a short title for a new agent, derived from your first prompt. Only generated when you didn't type one yourself.
 - **Worktree branch names** — a slug for the branch a new worktree agent runs on.
 - **Commit messages** — a concise message for the changes you're committing.
 - **Pull request title and body** — drafted from the diff when you open a PR.
@@ -66,7 +66,6 @@ You can steer the wording of each kind of metadata per repository with a `paseo.
 ```json
 {
   "metadataGeneration": {
-    "agentTitle": { "instructions": "Prefix titles with the area of the codebase." },
     "branchName": { "instructions": "Use the format <type>/<scope>-<short-desc>." },
     "commitMessage": { "instructions": "Follow Conventional Commits." },
     "pullRequest": { "instructions": "Include a Testing section in the body." }

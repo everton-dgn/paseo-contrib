@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
+import { Pressable, Text, TextInput, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { ExternalLink, PackagePlus, Search } from "lucide-react-native";
-import { AdaptiveTextInput } from "@/components/adaptive-modal-sheet";
 import { Button } from "@/components/ui/button";
+import { isWeb } from "@/constants/platform";
 import {
   useAcpProviderCatalog,
   type AcpProviderCatalogItem,
@@ -27,6 +28,9 @@ const ThemedPackagePlus = withUnistyles(PackagePlus);
 const ThemedSvgXml = withUnistyles(SvgXml);
 const ThemedSearch = withUnistyles(Search);
 const ThemedExternalLink = withUnistyles(ExternalLink);
+const ThemedTextInput = withUnistyles(TextInput, (theme) => ({
+  placeholderTextColor: theme.colors.foregroundMuted,
+}));
 
 const foregroundColorMapping = (theme: Theme) => ({ color: theme.colors.foreground });
 const foregroundMutedColorMapping = (theme: Theme) => ({
@@ -48,6 +52,10 @@ interface CatalogRowProps {
 }
 
 function CatalogRow({ entry, installing, onInstall }: CatalogRowProps) {
+  const { t } = useTranslation();
+  const actionLabel = installing
+    ? t("providerCatalog.actions.adding")
+    : t("providerCatalog.actions.add");
   const handleInstall = useCallback(() => {
     onInstall(entry);
   }, [entry, onInstall]);
@@ -84,12 +92,14 @@ function CatalogRow({ entry, installing, onInstall }: CatalogRowProps) {
         </Text>
         <Pressable
           accessibilityRole="link"
-          accessibilityLabel={`${entry.title} install instructions`}
+          accessibilityLabel={t("providerCatalog.actions.installInstructionsFor", {
+            provider: entry.title,
+          })}
           onPress={handleOpenInstallLink}
           style={styles.installLink}
         >
           <Text style={styles.installLinkText} numberOfLines={1}>
-            Install instructions
+            {t("providerCatalog.actions.installInstructions")}
           </Text>
           <ThemedExternalLink size={12} uniProps={foregroundMutedColorMapping} />
         </Pressable>
@@ -103,7 +113,7 @@ function CatalogRow({ entry, installing, onInstall }: CatalogRowProps) {
         style={styles.actionButton}
         testID={`install-provider-${entry.id}`}
       >
-        {installing ? "Adding" : "Add"}
+        {actionLabel}
       </Button>
     </View>
   );
@@ -114,6 +124,7 @@ export function ProviderCatalogList({
   installingProviderId,
   onInstall,
 }: ProviderCatalogListProps) {
+  const { t } = useTranslation();
   const { entries: catalogEntries } = useAcpProviderCatalog();
   const { entries: providerEntries } = useProvidersSnapshot(serverId);
   const [search, setSearch] = useState("");
@@ -137,13 +148,14 @@ export function ProviderCatalogList({
         <View style={styles.searchIcon}>
           <ThemedSearch size={SEARCH_ICON_SIZE} uniProps={foregroundMutedColorMapping} />
         </View>
-        <AdaptiveTextInput
+        <ThemedTextInput
           testID="provider-catalog-search"
-          accessibilityLabel="Search providers"
           value={search}
           onChangeText={setSearch}
-          placeholder="Search providers"
-          style={styles.searchInput}
+          accessibilityLabel={t("providerCatalog.search")}
+          placeholder={t("providerCatalog.search")}
+          // @ts-expect-error - outlineStyle is web-only
+          style={SEARCH_INPUT_STYLE}
           autoCapitalize="none"
           autoCorrect={false}
         />
@@ -151,9 +163,7 @@ export function ProviderCatalogList({
 
       {availableEntries.length === 0 ? (
         <View style={styles.stateBox}>
-          <Text style={styles.stateText}>
-            {search.trim().length > 0 ? "No providers found" : "All providers are installed"}
-          </Text>
+          <Text style={styles.stateText}>{t("providerCatalog.noProviders")}</Text>
         </View>
       ) : (
         <View style={styles.list}>
@@ -274,3 +284,5 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize.sm,
   },
 }));
+
+const SEARCH_INPUT_STYLE = [styles.searchInput, isWeb && { outlineStyle: "none" }];
