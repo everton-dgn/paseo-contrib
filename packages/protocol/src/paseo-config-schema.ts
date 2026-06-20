@@ -39,6 +39,7 @@ export const PaseoMetadataGenerationEntrySchema = z
 
 export const PaseoMetadataGenerationSchema = z
   .object({
+    title: PaseoMetadataGenerationEntrySchema.optional(),
     branchName: PaseoMetadataGenerationEntrySchema.optional(),
     commitMessage: PaseoMetadataGenerationEntrySchema.optional(),
     pullRequest: PaseoMetadataGenerationEntrySchema.optional(),
@@ -57,8 +58,8 @@ export const PaseoConfigRawSchema = z
   .passthrough();
 
 export const WorktreeConfigSchema = PaseoWorktreeConfigRawSchema.extend({
-  setup: z.unknown().transform(normalizeLifecycleCommands),
-  teardown: z.unknown().transform(normalizeLifecycleCommands),
+  setup: z.unknown().optional().transform(normalizeLifecycleCommands),
+  teardown: z.unknown().optional().transform(normalizeLifecycleCommands),
 })
   .passthrough()
   .catch({ setup: [], teardown: [] });

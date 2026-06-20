@@ -206,7 +206,7 @@ export const zhCN: TranslationResources = {
     },
   },
   sessions: {
-    title: "Agent 历史",
+    title: "历史",
     empty: "还没有会话",
     actions: {
       loadMore: "加载更多",
@@ -328,11 +328,14 @@ export const zhCN: TranslationResources = {
   workspace: {
     route: {
       loading: "正在加载 workspace",
+      restoring: "正在恢复 workspace",
+      restoreFailed: "无法恢复此 workspace — 目录可能已被移动或删除",
       connecting: "正在连接",
       hostOffline: "{{hostName}} 已离线",
       cannotReachHost: "无法连接 {{hostName}}",
       hostStatus: "Host 状态：{{status}}",
       missing: "Workspace 未找到",
+      needsHostUpgrade: "更新你的 Host 以恢复此 workspace",
       manageHost: "管理 Host",
     },
     hoverCard: {
@@ -599,16 +602,16 @@ export const zhCN: TranslationResources = {
           success: "已归档",
         },
         mergePr: {
-          squash: "Merge",
-          merge: "Merge",
-          rebase: "Merge",
+          squash: "Merge PR (squash)",
+          merge: "Merge PR (merge)",
+          rebase: "Merge PR (rebase)",
           pending: "正在 merge PR...",
           success: "PR 已 merge",
         },
         autoMerge: {
-          enableSquash: "Auto merge",
-          enableMerge: "Auto merge",
-          enableRebase: "Auto merge",
+          enableSquash: "Auto merge (squash)",
+          enableMerge: "Auto merge (merge)",
+          enableRebase: "Auto merge (rebase)",
           enabled: "Auto-merge 已启用",
           enabling: "正在启用 auto-merge...",
           disabling: "正在禁用 auto-merge...",
@@ -776,6 +779,7 @@ export const zhCN: TranslationResources = {
       toasts: {
         hostDisconnected: "Host 未连接",
         removeFailed: "部分 workspace 移除失败",
+        updateHostToRemove: "更新 host 以移除 projects。",
       },
       empty: {
         title: "还没有 projects",
@@ -1286,6 +1290,8 @@ export const zhCN: TranslationResources = {
     backdrop: "菜单背景",
   },
   subagents: {
+    detachAction: "分离 {{label}}",
+    detachTooltip: "分离 subagent",
     archiveAction: "归档 {{label}}",
     archiveTooltip: "归档 subagent",
   },
@@ -1371,6 +1377,7 @@ export const zhCN: TranslationResources = {
       agents: "Agents",
       workspaces: "Workspaces",
       providers: "Providers",
+      usage: "使用情况",
       terminals: "Terminals",
       host: "Host",
     },
@@ -1751,6 +1758,9 @@ export const zhCN: TranslationResources = {
         button: "诊断",
         refresh: "刷新",
         refreshing: "正在刷新...",
+        copyLabel: "诊断",
+        copyAccessibility: "复制诊断",
+        copyFailed: "复制诊断失败",
         refreshAccessibility: "刷新诊断",
         refreshingAccessibility: "正在刷新诊断",
         running: "正在运行诊断...",
