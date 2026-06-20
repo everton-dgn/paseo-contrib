@@ -33,10 +33,39 @@ describe("paseo config schema", () => {
     });
   });
 
+  it("normalizes partial worktree lifecycle config without dropping present commands", () => {
+    expect(
+      PaseoConfigSchema.parse({
+        worktree: {
+          setup: 'echo "setup ran" > setup.log',
+        },
+      }),
+    ).toEqual({
+      worktree: {
+        setup: ['echo "setup ran" > setup.log'],
+        teardown: [],
+      },
+    });
+
+    expect(
+      PaseoConfigSchema.parse({
+        worktree: {
+          teardown: ["npm run clean"],
+        },
+      }),
+    ).toEqual({
+      worktree: {
+        setup: [],
+        teardown: ["npm run clean"],
+      },
+    });
+  });
+
   it("parses all metadata generation instruction entries", () => {
     expect(
       PaseoConfigSchema.parse({
         metadataGeneration: {
+          title: { instructions: "Keep titles to a few words." },
           branchName: { instructions: "Prefix branches with feat/." },
           commitMessage: { instructions: "Use imperative mood." },
           pullRequest: { instructions: "Include risk notes." },
@@ -44,6 +73,7 @@ describe("paseo config schema", () => {
       }),
     ).toEqual({
       metadataGeneration: {
+        title: { instructions: "Keep titles to a few words." },
         branchName: { instructions: "Prefix branches with feat/." },
         commitMessage: { instructions: "Use imperative mood." },
         pullRequest: { instructions: "Include risk notes." },
