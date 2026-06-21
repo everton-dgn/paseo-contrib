@@ -62,15 +62,18 @@ export async function runLsCommand(
   options: WorktreeLsOptions,
   _command: Command,
 ): Promise<WorktreeLsResult> {
-  return runLsCommandWithDeps(options, { connectToDaemon });
+  return runLsCommandWithDeps(options, {
+    connectToDaemon,
+    getCwd: () => process.cwd(),
+  });
 }
 
 export async function runLsCommandWithDeps(
   options: WorktreeLsOptions,
-  deps: { connectToDaemon: typeof connectToDaemon },
+  deps: { connectToDaemon: typeof connectToDaemon; getCwd: () => string },
 ): Promise<WorktreeLsResult> {
   const host = getDaemonHost({ host: options.host });
-  const cwd = options.cwd ?? process.cwd();
+  const cwd = options.cwd ?? deps.getCwd();
 
   let client: DaemonClient;
   try {

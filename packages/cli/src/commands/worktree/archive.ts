@@ -41,16 +41,19 @@ export async function runArchiveCommand(
   options: WorktreeArchiveOptions,
   _command: Command,
 ): Promise<WorktreeArchiveCommandResult> {
-  return runArchiveCommandWithDeps(nameArg, options, { connectToDaemon });
+  return runArchiveCommandWithDeps(nameArg, options, {
+    connectToDaemon,
+    getCwd: () => process.cwd(),
+  });
 }
 
 export async function runArchiveCommandWithDeps(
   nameArg: string,
   options: WorktreeArchiveOptions,
-  deps: { connectToDaemon: typeof connectToDaemon },
+  deps: { connectToDaemon: typeof connectToDaemon; getCwd: () => string },
 ): Promise<WorktreeArchiveCommandResult> {
   const host = getDaemonHost({ host: options.host });
-  const cwd = options.cwd ?? process.cwd();
+  const cwd = options.cwd ?? deps.getCwd();
 
   // Validate arguments
   if (!nameArg || nameArg.trim().length === 0) {

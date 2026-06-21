@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { DaemonClient } from "@getpaseo/client/internal/daemon-client";
 import { runArchiveCommandWithDeps } from "./archive.js";
 
@@ -29,10 +29,6 @@ function createFakeDaemonClient(
 // worktree-session.test.ts prove real filesystem removal end-to-end.
 
 describe("runArchiveCommand", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("sends scope worktree when archiving by worktree path", async () => {
     const cwd = "/tmp/source-repo";
     const worktreePath = "/tmp/paseo-home/worktrees/repo/feature";
@@ -72,6 +68,7 @@ describe("runArchiveCommand", () => {
       { cwd },
       {
         connectToDaemon: async () => fakeClient,
+        getCwd: () => "/tmp/unused-repo",
       },
     );
 
@@ -92,7 +89,6 @@ describe("runArchiveCommand", () => {
 
   it("archives by matching branch name when no directory name matches", async () => {
     const cwd = "/tmp/current-repo";
-    vi.spyOn(process, "cwd").mockReturnValue(cwd);
 
     const worktreePath = "/tmp/paseo-home/worktrees/repo/feature-branch";
     const listCalls: Array<Parameters<DaemonClient["getPaseoWorktreeList"]>[0]> = [];
@@ -131,6 +127,7 @@ describe("runArchiveCommand", () => {
       {},
       {
         connectToDaemon: async () => fakeClient,
+        getCwd: () => cwd,
       },
     );
 
@@ -155,6 +152,7 @@ describe("runArchiveCommand", () => {
         {},
         {
           connectToDaemon: async () => fakeClient,
+          getCwd: () => "/tmp/current-repo",
         },
       ),
     ).rejects.toMatchObject({

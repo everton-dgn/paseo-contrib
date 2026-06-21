@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { DaemonClient } from "@getpaseo/client/internal/daemon-client";
 import { runLsCommandWithDeps } from "./ls.js";
 
@@ -23,13 +23,8 @@ function createFakeDaemonClient(
 }
 
 describe("runLsCommand", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("lists worktrees for the current cwd by default", async () => {
     const cwd = "/tmp/current-repo";
-    vi.spyOn(process, "cwd").mockReturnValue(cwd);
 
     const listCalls: Array<Parameters<DaemonClient["getPaseoWorktreeList"]>[0]> = [];
     const fakeClient = createFakeDaemonClient({
@@ -47,6 +42,7 @@ describe("runLsCommand", () => {
       {},
       {
         connectToDaemon: async () => fakeClient,
+        getCwd: () => cwd,
       },
     );
 
@@ -79,6 +75,7 @@ describe("runLsCommand", () => {
       { cwd },
       {
         connectToDaemon: async () => fakeClient,
+        getCwd: () => "/tmp/unused-repo",
       },
     );
 
