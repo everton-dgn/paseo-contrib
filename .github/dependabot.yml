@@ -26,6 +26,52 @@ updates:
           - "minor"
           - "patch"
 
+  # npm dependencies (example app: basic-usage)
+  - package-ecosystem: "npm"
+    directory: "/packages/expo-two-way-audio/examples/basic-usage"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+      semver-minor-days: 7
+      semver-patch-days: 3
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # npm dependencies (example app: flow-api)
+  - package-ecosystem: "npm"
+    directory: "/packages/expo-two-way-audio/examples/flow-api"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+      semver-minor-days: 7
+      semver-patch-days: 3
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+
   # GitHub Actions (keeps SHA-pinned actions current)
   - package-ecosystem: "github-actions"
     directory: "/"
