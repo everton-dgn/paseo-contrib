@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DaemonClient } from "@getpaseo/client/internal/daemon-client";
 import { runArchiveCommandWithDeps } from "./archive.js";
 
@@ -29,24 +29,33 @@ function createFakeDaemonClient(
 // worktree-session.test.ts prove real filesystem removal end-to-end.
 
 describe("runArchiveCommand", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("sends scope worktree when archiving by worktree path", async () => {
+    const cwd = "/tmp/source-repo";
     const worktreePath = "/tmp/paseo-home/worktrees/repo/feature";
+    const listCalls: Array<Parameters<DaemonClient["getPaseoWorktreeList"]>[0]> = [];
     const archiveCalls: Array<{
       input: Parameters<DaemonClient["archivePaseoWorktree"]>[0];
     }> = [];
     const fakeClient = createFakeDaemonClient({
-      getPaseoWorktreeList: async () => ({
-        worktrees: [
-          {
-            worktreePath,
-            branchName: "feature",
-            head: "abc123",
-            createdAt: "2026-04-12T00:00:00.000Z",
-          },
-        ],
-        error: null,
-        requestId: "req-list",
-      }),
+      getPaseoWorktreeList: async (input) => {
+        listCalls.push(input);
+        return {
+          worktrees: [
+            {
+              worktreePath,
+              branchName: "feature",
+              head: "abc123",
+              createdAt: "2026-04-12T00:00:00.000Z",
+            },
+          ],
+          error: null,
+          requestId: "req-list",
+        };
+      },
       archivePaseoWorktree: async (input) => {
         archiveCalls.push({ input });
         return {
@@ -60,12 +69,13 @@ describe("runArchiveCommand", () => {
 
     const result = await runArchiveCommandWithDeps(
       "feature",
-      {},
+      { cwd },
       {
         connectToDaemon: async () => fakeClient,
       },
     );
 
+    expect(listCalls).toEqual([{ cwd }]);
     expect(archiveCalls).toHaveLength(1);
     expect(archiveCalls[0]?.input.scope).toBe("worktree");
     expect(archiveCalls[0]?.input.worktreePath).toBe(worktreePath);
@@ -81,23 +91,30 @@ describe("runArchiveCommand", () => {
   });
 
   it("archives by matching branch name when no directory name matches", async () => {
+    const cwd = "/tmp/current-repo";
+    vi.spyOn(process, "cwd").mockReturnValue(cwd);
+
     const worktreePath = "/tmp/paseo-home/worktrees/repo/feature-branch";
+    const listCalls: Array<Parameters<DaemonClient["getPaseoWorktreeList"]>[0]> = [];
     const archiveCalls: Array<{
       input: Parameters<DaemonClient["archivePaseoWorktree"]>[0];
     }> = [];
     const fakeClient = createFakeDaemonClient({
-      getPaseoWorktreeList: async () => ({
-        worktrees: [
-          {
-            worktreePath,
-            branchName: "feature-x",
-            head: "abc123",
-            createdAt: "2026-04-12T00:00:00.000Z",
-          },
-        ],
-        error: null,
-        requestId: "req-list",
-      }),
+      getPaseoWorktreeList: async (input) => {
+        listCalls.push(input);
+        return {
+          worktrees: [
+            {
+              worktreePath,
+              branchName: "feature-x",
+              head: "abc123",
+              createdAt: "2026-04-12T00:00:00.000Z",
+            },
+          ],
+          error: null,
+          requestId: "req-list",
+        };
+      },
       archivePaseoWorktree: async (input) => {
         archiveCalls.push({ input });
         return {
@@ -117,6 +134,7 @@ describe("runArchiveCommand", () => {
       },
     );
 
+    expect(listCalls).toEqual([{ cwd }]);
     expect(archiveCalls).toHaveLength(1);
     expect(archiveCalls[0]?.input.scope).toBe("worktree");
     expect(archiveCalls[0]?.input.worktreePath).toBe(worktreePath);
