@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
+import { isPlatform } from "../../../test-utils/platform.js";
 import { buildTerminalEnvironment } from "../../terminal.js";
 import { buildAgentHookShellCommand } from "../agent-hook-installer.js";
 import {
@@ -151,7 +152,7 @@ describe("Claude terminal agent hooks", () => {
     );
   });
 
-  it.each(AGENT_HOOK_PROVIDERS.claude.events)(
+  it.skipIf(isPlatform("win32")).each(AGENT_HOOK_PROVIDERS.claude.events)(
     "$event hook command exits 0 when PASEO_TERMINAL_ID is unset",
     (event) => {
       const provider = AGENT_HOOK_PROVIDERS.claude;
